@@ -51,8 +51,6 @@ Starling/
 |           |-- 2026-05-17-app.md
 |           |-- 2026-05-17-cloud.md
 |           `-- 2026-05-17-integration.md
-|-- AGENTS.md
-`-- CLAUDE.md
 ```
 
 Planned implementation directories include `cad/`, `pcb/`, `firmware/`, `app/`, `cloud/`, `analyzer/`, `tests/`, and `scripts/`.
@@ -78,25 +76,15 @@ Starling is experimental motorcycle hardware. It is intended for controlled engi
 
 Do not install or ride with this system unless the relevant mechanical, electrical, firmware, app, cloud, and integration-test gates have passed. Any failure should bias toward the flat wing position, no active intervention, and full data logging for later analysis.
 
-## Recommended Open Source Licensing
+## Licensing
 
-Because Starling is open hardware plus software plus documentation, a single software license is not the best fit. Recommended release structure:
+Starling uses a split license model because the repository contains hardware design files, software, and documentation. See [LICENSES.md](LICENSES.md) for the directory-level license map.
 
-| Project Part                                                                    | Recommended License                                             | Why                                                                                                       |
-| ------------------------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Hardware design files: CAD, PCB, schematics, Gerbers, mechanical drawings, BOM  | [CERN-OHL-S-2.0](https://cern-ohl.web.cern.ch/)                 | Hardware-specific, strongly reciprocal, encourages derivative safety and design improvements to stay open |
-| Software: firmware, app, cloud functions, web console, Python analyzer, scripts | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0)       | Permissive, familiar for software, includes explicit patent language                                      |
-| Documentation: specs, plans, manuals, test protocols, reports                   | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | Attribution plus share-alike for derivative docs and procedures                                           |
-
-If the priority is maximum commercial adoption rather than reciprocal hardware sharing, replace CERN-OHL-S-2.0 with CERN-OHL-W-2.0 or CERN-OHL-P-2.0. Avoid "non-commercial" Creative Commons variants if the goal is open-source hardware compatibility.
-
-Before public release:
-
-1. Add root license files such as `LICENSES/CERN-OHL-S-2.0.txt`, `LICENSES/Apache-2.0.txt`, and `LICENSES/CC-BY-SA-4.0.txt`.
-2. Add `LICENSES.md` explaining which license applies to each directory.
-3. Add SPDX headers or short notices where practical.
-4. Keep the Starling name and logo as reserved trademarks unless you explicitly want to license branding too.
-5. Remove secrets, local tokens, private paths, and any credentials from agent settings before publishing.
+| Project Part                                                                    | Recommended License                          | Why                                                                                                       |
+| ------------------------------------------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Hardware design files: CAD, PCB, schematics, Gerbers, mechanical drawings, BOM  | [CERN-OHL-S-2.0](LICENSE-CERN-OHL-S-2.0.txt) | Hardware-specific, strongly reciprocal, encourages derivative safety and design improvements to stay open |
+| Software: firmware, app, cloud functions, web console, Python analyzer, scripts | [Apache-2.0](LICENSE-Apache-2.0.txt)         | Permissive, familiar for software, includes explicit patent language                                      |
+| Documentation: specs, plans, manuals, test protocols, reports                   | [CC BY-SA 4.0](LICENSE-CC-BY-SA-4.0.txt)     | Attribution plus share-alike for derivative docs and procedures                                           |
 
 ## Primary Documents
 
