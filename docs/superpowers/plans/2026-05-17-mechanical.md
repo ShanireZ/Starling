@@ -24,7 +24,7 @@
 
 - **IC-1** — Physical / electrical connectors and MCU pin map. Mechanical concerns:
   - **J7 / J8** connectors are 4-pin Marine-grade IP67 carrying servo PWM + 7.4 V. Servo box must expose a sealed pigtail terminating in the J7/J8 mating half. Strain-relief on the box exit. Cable run from box to fairing wire-pass ≥ 150 mm slack.
-  - **AS5600 encoder magnet pocket**: Diametrically-polarized ∅6 × 2.5 mm magnet, centered on the rotation axis, with **0.5 — 3.0 mm air-gap** to the AS5600 chip face. Pocket geometry must be molded into the wing root cap on the shaft end opposite the servo.
+  - **AS5600L encoder magnet pocket**: Diametrically-polarized ∅6 × 2.5 mm magnet, centered on the rotation axis, with **0.5 — 3.0 mm air-gap** to the AS5600L chip face. Pocket geometry must be molded into the wing root cap on the shaft end opposite the servo.
 - **IC-6** — Power budget. Servo selection must respect **30 W continuous, 50 W peak per channel**. The DSServo RDS5160 v1 selection (60 kg·cm metal-gear) and the Savox SB-2290SG v2 candidate (50 kg·cm steel-gear, IP67) both fit; mounting must accept either footprint with the same 4-bolt pattern. Firmware staggers left/right servo starts by 50 ms — no mechanical impact, noted here for traceability.
 
 ---
@@ -155,9 +155,9 @@ RFQ packets for the mechanical subsystem of the Starling Active Aero v1 project.
 ## Bound Interface Contracts
 
 - **IC-1** (master plan): J7/J8 servo connectors are 4-pin Marine IP67. Servo
-  box pigtail terminates in J7/J8 mating half with strain relief. AS5600 magnet
+  box pigtail terminates in J7/J8 mating half with strain relief. AS5600L magnet
   pocket: ∅6 × 2.5 mm diametrically-polarized magnet on wing root, 0.5-3.0 mm
-  air gap to AS5600 chip face.
+  air gap to AS5600L chip face.
 - **IC-6** (master plan): 30 W continuous / 50 W peak per servo channel. Servo
   mount accommodates both DSServo RDS5160 and Savox SB-2290SG (same 4-bolt
   pattern). Firmware staggers left/right servo starts 50 ms.
@@ -530,7 +530,7 @@ git commit -m "mech: loft wing body 120x350 between root/tip airfoil sketches"
 
 ---
 
-## Task 5: Add internal carbon-rod spar channel and AS5600 magnet pocket
+## Task 5: Add internal carbon-rod spar channel and AS5600L magnet pocket
 
 **Files:**
 - Modify: `cad/wing/wing_master.f3d`
@@ -538,8 +538,8 @@ git commit -m "mech: loft wing body 120x350 between root/tip airfoil sketches"
 - [ ] **Step 5.1: Define acceptance criteria**
 
 - Through-hole ∅`spar_dia + 0.2 mm` (= 3.2 mm) running from root face to tip face, located at `x = 50% chord` (= 60 mm), `y = 0` (at camber-line midpoint). This is the carbon-rod spar pocket.
-- AS5600 magnet pocket on the **wing-root** end face (Y = 0 end): cylindrical recess ∅`magnet_dia` (= 6 mm) × `magnet_depth` (= 2.5 mm) deep, centered on `Pivot_Axis`. Magnet sits **flush with the root face** — mechanical owns the magnet plane; this is fixed by the wing geometry and the magnet-pocket depth.
-- Magnet-to-chip air gap (per IC-1, allowable range **0.5 – 3.0 mm**): the wing root face sets one side of the gap; the **other side is the AS5600 chip face on the encoder PCB**, whose Z position is locked in by the **electronics plan** (PCB stack-up, standoff height, mounting boss depth). The sub-frame boss that hosts the encoder PCB is designed for a **nominal 1.5 mm gap**, with the sub-frame boss face designed to allow ±1 mm of shim adjustment at assembly time so the actual gap can be tuned anywhere in 0.5 – 3.0 mm without re-machining. **Input dependency:** the AS5600 PCB depth (chip-face Z offset relative to PCB mount face) is taken from the electronics plan — see `docs/superpowers/plans/2026-05-17-electronics.md` (encoder PCB BOM + mechanical envelope). If electronics revises the PCB stack, the sub-frame boss depth must be updated accordingly.
+- AS5600L magnet pocket on the **wing-root** end face (Y = 0 end): cylindrical recess ∅`magnet_dia` (= 6 mm) × `magnet_depth` (= 2.5 mm) deep, centered on `Pivot_Axis`. Magnet sits **flush with the root face** — mechanical owns the magnet plane; this is fixed by the wing geometry and the magnet-pocket depth.
+- Magnet-to-chip air gap (per IC-1, allowable range **0.5 – 3.0 mm**): the wing root face sets one side of the gap; the **other side is the AS5600L chip face on the encoder PCB**, whose Z position is locked in by the **electronics plan** (PCB stack-up, standoff height, mounting boss depth). The sub-frame boss that hosts the encoder PCB is designed for a **nominal 1.5 mm gap**, with the sub-frame boss face designed to allow ±1 mm of shim adjustment at assembly time so the actual gap can be tuned anywhere in 0.5 – 3.0 mm without re-machining. **Input dependency:** the AS5600L PCB depth (chip-face Z offset relative to PCB mount face) is taken from the electronics plan — see `docs/superpowers/plans/2026-05-17-electronics.md` (encoder PCB BOM + mechanical envelope). If electronics revises the PCB stack, the sub-frame boss depth must be updated accordingly.
 - Shaft-coupling pocket on the **wing-tip** end face (Y = 350 mm end): hex socket 8 mm across-flats × 10 mm deep, centered on `Pivot_Axis`, with a 2 mm flat key on one face to mate with the shaft D-flat. (See Task 8 for shaft.)
 
 - [ ] **Step 5.2: Add carbon-rod through-hole**
@@ -549,7 +549,7 @@ git commit -m "mech: loft wing body 120x350 between root/tip airfoil sketches"
 3. Extrude → Cut → distance = `span` = 350 mm, through-all preferred.
 4. Name feature `Spar_Channel`.
 
-- [ ] **Step 5.3: Add AS5600 magnet pocket (root face)**
+- [ ] **Step 5.3: Add AS5600L magnet pocket (root face)**
 
 1. New sketch on root face.
 2. Circle ∅6 mm at `Pivot_Axis` intersection (i.e., at `(pivot_x, 0)` = (84, 0) in airfoil-sketch coords).
@@ -573,7 +573,7 @@ git commit -m "mech: loft wing body 120x350 between root/tip airfoil sketches"
 
 ```bash
 git add cad/wing/wing_master.f3d
-git commit -m "mech: add carbon-rod spar channel + AS5600 magnet pocket + shaft coupling"
+git commit -m "mech: add carbon-rod spar channel + AS5600L magnet pocket + shaft coupling"
 ```
 
 ---
@@ -997,7 +997,7 @@ git commit -m "mech: document GSX250R-A 2022 sub-frame mount points and load cas
 - 2× M6 clearance holes ∅6.6 mm at HP3 + HP4 positions.
 - Exposes the universal **4× M6 tapped boss pattern** at the wing-module interface (75 × 50 mm rectangular pattern; centered on wing pivot location).
 - **Strain-gauge inset pocket** (per spec §7.3 / FMEA #22 — "v1 内嵌应变片 + HX711 + 长期监测"): a machined rectangular pocket **15 × 8 × 0.3 mm deep** on the high-stress face of the sub-frame (typically at the inner radius of the load-bearing arm where FEA, Task 20, shows peak stress). Pocket floor finish must be machined flat with **Ra ≤ 0.8 µm** to provide a clean bonding surface for the foil strain gauge. A small **∅3 mm wire pass-through** routes the 3-conductor lead wires from the pocket through the sub-frame to the protected (inboard) face so they are shielded from debris and abrasion. Pocket location is defined provisionally for CAD layout in Step 13.2 and **finalized after FEA in Task 20** (the FEA report identifies peak-stress location; the pocket is re-positioned to that location if it differs from the provisional placement).
-- **Encoder-PCB boss for AS5600 (interface with electronics plan):** the sub-frame includes a boss on the wing-root side that hosts the AS5600 encoder PCB. Boss depth is designed to give a **nominal 1.5 mm magnet-to-chip air gap** with the wing at flush-mount magnet position, sized to allow ±1 mm of shim adjustment at assembly so actual gap remains within IC-1's 0.5 – 3.0 mm range. PCB Z-position input comes from the electronics plan.
+- **Encoder-PCB boss for AS5600L (interface with electronics plan):** the sub-frame includes a boss on the wing-root side that hosts the AS5600L encoder PCB. Boss depth is designed to give a **nominal 1.5 mm magnet-to-chip air gap** with the wing at flush-mount magnet position, sized to allow ±1 mm of shim adjustment at assembly so actual gap remains within IC-1's 0.5 – 3.0 mm range. PCB Z-position input comes from the electronics plan.
 - Mass ≤ 600 g per side.
 - All sharp edges chamfered 1 × 45°.
 
@@ -1011,7 +1011,7 @@ git commit -m "mech: document GSX250R-A 2022 sub-frame mount points and load cas
 6. Sketch the wing-side interface boss: 75 × 50 × 8 mm boss on the outboard face, centered on (X=480, Z=460). Tap 4× M6 holes 10 mm deep at corners of a 65 × 40 mm rectangular pattern.
 7. Lighten the plate: pocket-mill 4× rectangular pockets where structural FEA shows low stress (rough first pass; refine after FEA in Task 20).
 8. **Strain-gauge pocket:** sketch a 15 × 8 mm rectangle on the high-stress face of the sub-frame (provisional placement: inner radius of the load-bearing arm where the wing-side boss meets the main plate; final placement reconciled against Task 20 FEA peak-stress map). Extrude-cut 0.3 mm deep. Drawing must call out floor finish **Ra ≤ 0.8 µm** so the CNC vendor produces a clean bonding surface. Add a ∅3 mm through-hole at one short edge of the pocket leading to the inboard (protected) face for wire routing. Name the feature `StrainGauge_Pocket`.
-9. **Encoder PCB boss:** add a boss on the wing-root side, drilled and counterbored for the AS5600 PCB mounting screws (per electronics-plan PCB footprint), with boss depth tuned so the chip face sits at the nominal 1.5 mm gap from the wing root magnet plane and allows ±1 mm shimming. Reference the electronics plan for PCB stack-up height.
+9. **Encoder PCB boss:** add a boss on the wing-root side, drilled and counterbored for the AS5600L PCB mounting screws (per electronics-plan PCB footprint), with boss depth tuned so the chip face sits at the nominal 1.5 mm gap from the wing root magnet plane and allows ±1 mm shimming. Reference the electronics plan for PCB stack-up height.
 10. Fillet all internal corners R3 mm (except inside `StrainGauge_Pocket`, which retains its rectangular geometry). Chamfer all external edges 1 × 45°.
 
 - [ ] **Step 13.3: Verify**
@@ -1107,7 +1107,7 @@ Same as GSX250R sub-frame (Task 13.1) **except**:
 - Mass ≤ 600 g per side.
 - **Identical universal 4× M6 wing-side interface** (65 × 40 mm pattern, same boss height 8 mm) so wing modules interchange between bikes.
 - **Identical strain-gauge inset pocket** (15 × 8 × 0.3 mm deep, Ra ≤ 0.8 µm floor, ∅3 mm wire pass-through) per Task 13.1, positioned on this sub-frame's high-stress face (provisional; finalized against Task 20 FEA). RC450 carries the higher load case (top speed 195 km/h vs GSX's 140 km/h), so this gauge is the primary fatigue monitor.
-- **Identical encoder PCB boss** with the same nominal 1.5 mm gap geometry and ±1 mm shim allowance, referencing the electronics plan for AS5600 PCB stack-up.
+- **Identical encoder PCB boss** with the same nominal 1.5 mm gap geometry and ±1 mm shim allowance, referencing the electronics plan for AS5600L PCB stack-up.
 
 - [ ] **Step 15.2: Build**
 
@@ -1563,7 +1563,7 @@ git commit -m "mech: engineering drawing for v1 SLA wing, A3, ISO"
 
 - A3, 1st-angle ISO, 1:1 or 1:2 scale (whichever fits 250 × 180 plate envelope).
 - Views: top, front, side, iso. Section A-A through the wing-side interface boss. **Detail view B at 5:1 of the `StrainGauge_Pocket`** to clearly show 15 × 8 × 0.3 mm pocket and ∅3 mm wire pass-through.
-- Dimensions for all 4 mount holes (HP1-4 positions), the 4× M6 wing-side pattern (65 × 40 mm with M6 tap call-out), the strain-gauge pocket (15 ±0.1 × 8 ±0.1 × 0.3 +0.05/0 mm) with its ∅3 mm wire pass-through, the AS5600 encoder PCB boss (depth tuned to nominal 1.5 mm magnet-to-chip gap; mask anodize), and overall envelope.
+- Dimensions for all 4 mount holes (HP1-4 positions), the 4× M6 wing-side pattern (65 × 40 mm with M6 tap call-out), the strain-gauge pocket (15 ±0.1 × 8 ±0.1 × 0.3 +0.05/0 mm) with its ∅3 mm wire pass-through, the AS5600L encoder PCB boss (depth tuned to nominal 1.5 mm magnet-to-chip gap; mask anodize), and overall envelope.
 - Tolerances: general ±0.1 mm; mount-hole positions ±0.05 mm; wing-side M6 hole positions ±0.02 mm (these are the inter-bike interchange-critical features); strain-gauge pocket floor **Ra ≤ 0.8 µm** (explicit call-out — bonding-surface requirement).
 - Material: "6061-T6 aluminum plate, 12 mm".
 - Finish: "Anodize Type II, black, matte, 10-20 μm; mask all tapped holes **and the `StrainGauge_Pocket` floor** (anodize layer would interfere with strain-gauge bond)".
@@ -2056,7 +2056,7 @@ A step-by-step assembly guide written for the human assembler (the user) coverin
 - Pre-assembly checks (bolts, bearings, parts inventory against BOM).
 - Step-by-step assembly with photos placeholders (file paths, captured during actual assembly).
 - Torque specs per bolt.
-- Calibration step (zero the AS5600 encoder against true wing 0° geometric).
+- Calibration step (zero the AS5600L encoder against true wing 0° geometric).
 - Final inspection checklist (matches FMEA item #28 user-error mitigation).
 
 - [ ] **Step 27.2: Write assembly instructions**
@@ -2116,11 +2116,11 @@ Match received parts against BOM-Mech.csv. Each part must:
 2. Engage the shaft D-flat into the wing's hex+key coupling pocket.
 3. Verify the wing rotates with the shaft (no slip).
 
-### Step 5: Install AS5600 magnet into wing-root pocket
+### Step 5: Install AS5600L magnet into wing-root pocket
 
 1. Apply a drop of cyanoacrylate into the magnet pocket.
 2. Insert the ∅6 × 2.5 mm diametrically-polarized magnet, polar axis
-   perpendicular to shaft axis (so AS5600 sees rotation).
+   perpendicular to shaft axis (so AS5600L sees rotation).
 3. Press flush. Wipe excess. Cure 1 h.
 
 ### Step 6: Install reset torsion spring
@@ -2191,7 +2191,7 @@ Match received parts against BOM-Mech.csv. Each part must:
 
 1. With wing physically at 0° geometric (level, parallel to chord plane),
    run firmware's `calibrate_zero` command via App.
-2. AS5600 stores the current reading as the zero reference.
+2. AS5600L stores the current reading as the zero reference.
 3. Manually rotate wing to verify reading goes 0° → 70° correctly.
 
 ### Step 13: Final inspection checklist
@@ -2203,7 +2203,7 @@ Match received parts against BOM-Mech.csv. Each part must:
 - [ ] All M5/M4/M3 bolts torqued and Loctite applied
 - [ ] Bearings seat flush, no rocking
 - [ ] Wing rotates freely 0° → 70° and returns under spring
-- [ ] Encoder magnet glued in, **air gap within IC-1 range 0.5–3.0 mm** (nominal 1.5 mm; shimmed at AS5600 PCB boss if measured value falls outside)
+- [ ] Encoder magnet glued in, **air gap within IC-1 range 0.5–3.0 mm** (nominal 1.5 mm; shimmed at AS5600L PCB boss if measured value falls outside)
 - [ ] Servo box lid sealed (EPDM compressed)
 - [ ] Cable gland tightened
 - [ ] No wire chafing against moving parts
@@ -2271,13 +2271,13 @@ git commit -m "mech: assembly instructions with torque table + README link"
 - Documentation: README + assembly instructions + spring spec + mold layup recipe + print recipe.
 
 **Interface contract bindings honored:**
-- IC-1: J7/J8 servo box pigtail exit + AS5600 magnet pocket ∅6×2.5 mm with **1.5 mm nominal air gap, ±1 mm shim range** (designed to stay within the IC-1-mandated 0.5 – 3.0 mm range; actual gap locked in at assembly time per the encoder PCB depth from the electronics plan) (Tasks 5, 11, 27).
+- IC-1: J7/J8 servo box pigtail exit + AS5600L magnet pocket ∅6×2.5 mm with **1.5 mm nominal air gap, ±1 mm shim range** (designed to stay within the IC-1-mandated 0.5 – 3.0 mm range; actual gap locked in at assembly time per the encoder PCB depth from the electronics plan) (Tasks 5, 11, 27).
 - IC-6: 30 W cont / 50 W peak per channel; dual-footprint servo box accepts both DSServo RDS5160 (v1) and Savox SB-2290SG (v2) (Task 11).
 
 **Cross-subsystem dependencies created:**
 - Mechanical CAD STEP files feed the **integration test plan** (assembly + Gate E/F upcomings).
 - Servo box pigtail expects J7/J8 mating connectors from **electronics plan** (IC-1).
-- AS5600 magnet pocket geometry depends on AS5600 chip placement from **electronics plan** (encoder PCB position).
+- AS5600L magnet pocket geometry depends on AS5600L chip placement from **electronics plan** (encoder PCB position).
 - Strain gauge mount pocket (item 22, BOM) feeds **firmware plan** HX711 reading code.
 
 **v2 forward-prep:** Mold halves designed and exported in Task 19. The PETG molds are not produced in v1 (BOM items 23-24 reserved). Layup recipe documented for future execution.

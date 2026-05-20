@@ -41,8 +41,8 @@
 | J2 | 已直焊 IMU BMI270 (无外部连接器) | — | — |
 | J3 | 后轮 Hall 传感器 + 磁铁 | 3-pin Marine IP67 (屏蔽线) | VCC 5V / GND / OUT (digital pulse) |
 | J4 | 刹车杆 Hall 传感器 + 磁铁 | 3-pin Marine IP67 (屏蔽线) | VCC 5V / GND / OUT (digital pulse) |
-| J5 | 左翼片 AS5600 角度编码器 | 5-pin Marine IP67 | VCC 3.3V / GND / SCL / SDA / ADDR |
-| J6 | 右翼片 AS5600 角度编码器 | 5-pin Marine IP67 | VCC 3.3V / GND / SCL / SDA / ADDR (不同地址) |
+| J5 | 左翼片 **AS5600L** 角度编码器 | 5-pin Marine IP67 | VCC 3.3V / GND / SCL / SDA / ADDR (ADDR=GND → 0x40) |
+| J6 | 右翼片 **AS5600L** 角度编码器 | 5-pin Marine IP67 | VCC 3.3V / GND / SCL / SDA / ADDR (ADDR=VCC → 0x41) |
 | J7 | 左舵机 (DSServo RDS5160) | 4-pin Marine IP67 | VCC 7.4V (50W 功率限流) / GND / PWM / Current sense return |
 | J8 | 右舵机 (同上) | 4-pin Marine IP67 | 同 J7 |
 | J9 | USB-C PD 输入 | USB-C (盒外密封盖) | PD 协商至 9V/5A |
@@ -71,9 +71,10 @@
 #define GPIO_USER_BUTTON        0     // 启动校准触发
 
 // I2C 地址（多设备共用 1 个 I2C 总线）
+// NOTE: 使用 AS5600L (NOT 标准 AS5600 — 后者地址固定 0x36 无法双芯片同总线)
 #define I2C_ADDR_IMU_BMI270     0x68
-#define I2C_ADDR_AS5600_LEFT    0x36   // ADDR pin = GND
-#define I2C_ADDR_AS5600_RIGHT   0x40   // ADDR pin = VCC (改变地址)
+#define I2C_ADDR_AS5600L_LEFT   0x40   // ADDR pin = GND
+#define I2C_ADDR_AS5600L_RIGHT  0x41   // ADDR pin = VCC
 
 // ATtiny85 ↔ 主 MCU
 // HEARTBEAT_OUT 应每 50ms 翻转一次（10Hz 心跳）
@@ -255,7 +256,7 @@ Auth 角色：
                             ├─ ATtiny85      (~0.05W)
                             ├─ GPS NEO-M9N   (~0.5W active)
                             ├─ IMU BMI270    (~0.01W)
-                            ├─ AS5600 ×2     (~0.05W)
+                            ├─ AS5600L ×2    (~0.05W)
                             ├─ Hall ×2       (~0.02W)
                             ├─ SD 卡        (~0.2W write, ~0.05W idle)
                             └─ 法拉电容 buffer
@@ -448,8 +449,8 @@ prompt: |
   - KiCad project setup
   - Schematic per IC-1's MCU pin map (no ambiguity allowed)
   - PCB layout 100×120mm, 2-layer, full SMT, JLCPCB-compatible
-  - Component selection per spec BOM (ESP32-WROOM-32E, ATtiny85,
-    BMI270 module land pattern, AS5600 footprint, USB-PD trigger,
+  - Component selection per spec BOM (ESP32-S3-WROOM-1U external-antenna module, ATtiny85,
+    BMI270 module land pattern, AS5600L footprint, USB-PD trigger,
     DC/DC modules, SD socket, supercaps, fuses)
   - Dual MOSFET series for safety (item #9 in FMEA)
   - In-line fuses (5A main + 1A servo secondary)
@@ -485,7 +486,7 @@ prompt: |
   - HAL layer (sensor abstractions, all per IC-1 pinout)
   - GPS UART driver (u-blox NEO-M9N, NMEA + UBX protocol)
   - IMU BMI270 driver (I2C, with Mahony filter for roll/pitch)
-  - AS5600 ×2 driver (I2C, two addresses)
+  - AS5600L ×2 driver (I2C, two addresses 0x40 / 0x41)
   - Hall input handlers (interrupt + debounce)
   - Servo PWM control (50Hz, 1000-2000μs pulse, with position closed-loop verify)
   - ATtiny85 heartbeat output (10Hz)
