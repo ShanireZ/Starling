@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver a KiCad 8 project (main PCB 100×120 mm + small separate AS5600 encoder PCB) + JLCPCB-ready Gerber files + BOM-Elec CSV + CPL pick-and-place file, fully SMT-populated, suitable for motorcycle vibration environment, that implements IC-1's pin map and connector layout exactly.
+**Goal:** Deliver a KiCad 8 project (main PCB 100×120 mm + small separate AS5600L encoder PCB) + JLCPCB-ready Gerber files + BOM-Elec CSV + CPL pick-and-place file, fully SMT-populated, suitable for motorcycle vibration environment, that implements IC-1's pin map and connector layout exactly.
 
-**Architecture:** Two distinct KiCad projects ship together. The **main board** (`pcb/starling.*`) is a 2-layer FR4 board carrying ESP32-S3-WROOM-1 (BLE 5 + Wi-Fi STA), ATtiny85 watchdog with dual-MOSFET-series servo kill switch, BMI270 IMU, USB-C PD trigger (9V/5A), dual buck DC/DC (9→7.4V/8A servo rail + 9→5V/3A MCU rail), SMD MicroSD socket, supercap brownout buffer, INA219 per-servo current monitor, and marine-grade IP67 board-edge connectors J1, J3-J9. The **encoder PCB** (`pcb/encoder/encoder.*`) is a small ~22×18 mm 2-layer board carrying a single AS5600 + I²C address strap + 5-pin pigtail; one per wing mounts on the sub-frame's AS5600 boss (geometry already defined in mechanical plan Task 13/15). All parts are SMT — zero through-hole — chosen from LCSC Basic preferred / Extended permitted. All file outputs target JLCPCB SMT assembly.
+> **NOTE — Scope of this plan (per master-plan Decision 2):** The strain-gauge monitoring (FMEA #22) is implemented as a SEPARATE standalone BLE module (own MCU + HX711 + LiPo + BLE), not on this main PCB. It will have its own implementation plan as a future sub-project. The mechanical plan retains the strain-gauge pocket on each sub-frame; that pocket will be populated when the standalone module is built. This electronics plan covers only the main controller board + AS5600L encoder PCB.
+
+**Architecture:** Two distinct KiCad projects ship together. The **main board** (`pcb/starling.*`) is a 2-layer FR4 board carrying ESP32-S3-WROOM-1U (BLE 5 + Wi-Fi STA, external IPEX U.FL antenna, exposes native USB D+/D- pins), ATtiny85 watchdog with dual-MOSFET-series servo kill switch, BMI270 IMU, USB-C PD trigger (9V/5A) that also doubles as the USB-CDC debug port via the ESP32-S3 native USB peripheral, dual buck DC/DC (9→7.4V/8A servo rail + 9→5V/3A MCU rail), SMD MicroSD socket, supercap brownout buffer, INA219 per-servo current monitor, and marine-grade IP67 board-edge connectors J1, J3-J9. The **encoder PCB** (`pcb/encoder/encoder.*`) is a small ~22×18 mm 2-layer board carrying a single AS5600L + I²C address strap + 5-pin pigtail; one per wing mounts on the sub-frame's AS5600L boss (geometry already defined in mechanical plan Task 13/15). All parts are SMT — zero through-hole — chosen from LCSC Basic preferred / Extended permitted. All file outputs target JLCPCB SMT assembly.
 
 **Tech Stack:**
 - ECAD: KiCad 8.x (open source, JLCPCB-supported)
@@ -22,7 +24,7 @@
 **Master plan:** [`2026-05-17-active-aero-v1-master.md`](2026-05-17-active-aero-v1-master.md)
 
 **Cross-plan dependencies:**
-- **Mechanical plan** (`2026-05-17-mechanical.md`): the sub-frame AS5600 boss accepts the encoder PCB at a designed depth such that the chip-face-to-magnet nominal air gap is 1.5 mm with ±1 mm shim range, within IC-1's allowed 0.5 – 3.0 mm window. Encoder PCB outline must mate with that boss. Servo box pigtail expects J7/J8 mating half (4-pin Marine IP67 with PWM + 7.4 V).
+- **Mechanical plan** (`2026-05-17-mechanical.md`): the sub-frame AS5600L boss accepts the encoder PCB at a designed depth such that the chip-face-to-magnet nominal air gap is 1.5 mm with ±1 mm shim range, within IC-1's allowed 0.5 – 3.0 mm window. Encoder PCB outline must mate with that boss. Servo box pigtail expects J7/J8 mating half (4-pin Marine IP67 with PWM + 7.4 V). Note: the mechanical plan also retains a strain-gauge pocket on each sub-frame; that pocket will be populated by a future standalone BLE strain-gauge module subsystem and is OUT OF SCOPE for this electronics plan (per master-plan Decision 2).
 - **Firmware plan** (`2026-05-17-firmware.md`): every GPIO assignment on this PCB must match IC-1's MCU pin map. Re-assignment requires master-plan revision.
 
 **Bound by these Interface Contracts (from master plan):**
@@ -31,12 +33,12 @@
   - J1 GPS (4-pin Marine IP67: VCC 3.3V / GND / TX / RX)
   - J3 wheel Hall (3-pin Marine IP67, shielded)
   - J4 brake-lever Hall (3-pin Marine IP67, shielded)
-  - J5 / J6 AS5600 encoders L/R (5-pin Marine IP67, shielded)
+  - J5 / J6 AS5600L encoders L/R (5-pin Marine IP67, shielded)
   - J7 / J8 servos L/R (4-pin Marine IP67: 7.4 V / GND / PWM / current-sense return)
-  - J9 USB-C PD input (USB-C receptacle, IP67 sealed cap external)
+  - J9 USB-C PD input + USB-CDC debug (USB-C receptacle, IP67 sealed cap external; dual-purpose — PD power input AND USB-CDC debug routed to ESP32-S3-WROOM-1U native USB D+/D- pins, with 1.5 kΩ D+ pull-up per USB device spec)
   - J10 (internal) SMD MicroSD socket
-  - Plus: **J11 HX711 strain-gauge interface (NEW)** — see "Open Decisions" section below. 4-pin Marine IP67 (VCC 5V / GND / SCK / DT). Pending master-plan IC-1 update; this plan reserves a GPIO and connector footprint but flags as RFC for the master-plan owner.
-- **IC-2** — BLE GATT requirements drive MCU selection: **ESP32-S3-WROOM-1** (BLE 5 + Wi-Fi STA dual-mode). The source spec §3.1 informally said "ESP32-WROOM-32E"; IC-1 + IC-2 mandate the S3 variant. **Resolution: this plan uses ESP32-S3-WROOM-1 as the canonical choice**, and the schematic includes a note pointing this out for traceability.
+  - (J11 dropped per master-plan Decision 2 — strain-gauge is a standalone BLE module, not on this main PCB. J12 dropped per master-plan Decision 3 — programming + debug happen via J9 USB-C using ESP32-S3-WROOM-1U's native USB peripheral.)
+- **IC-2** — BLE GATT requirements drive MCU selection: **ESP32-S3-WROOM-1U** (BLE 5 + Wi-Fi STA dual-mode, external IPEX U.FL antenna, exposes native USB D+/D- pins). The source spec §3.1 informally said "ESP32-WROOM-32E"; IC-1 + IC-2 mandate the S3 variant. The "U" suffix denotes the external-antenna variant which (a) lets the antenna mount inside the fairing tip behind a SMA bulkhead, away from PCB ground pour and away from the IP67 enclosure metallic surfaces, and (b) breaks out the native USB pins on the module pinout so the USB-C J9 doubles as the debug port (no separate programming header needed). **Resolution: this plan uses ESP32-S3-WROOM-1U as the canonical choice** (~5-10 RMB price premium over the PCB-antenna `-1` variant), and the schematic includes a note pointing this out for traceability.
 - **IC-6** — Power budget. Servo rail 8 A continuous (sized for 2× 50 W peak; firmware staggers servo starts 50 ms to stay under 45 W PD limit). MCU rail 3 A. USB-PD negotiation 9V/5A.
 
 ---
@@ -45,12 +47,13 @@
 
 | # | Decision | Resolution | Justification |
 |---|---|---|---|
-| D1 | ESP32-WROOM-32E vs ESP32-S3-WROOM-1 | **ESP32-S3-WROOM-1** | IC-2 requires BLE 5 + Wi-Fi STA dual-mode; only S3 variant supports BLE 5. Spec §3.1 wording is loose and superseded by IC-1/IC-2. |
+| D1 | ESP32-WROOM-32E vs ESP32-S3-WROOM-1U | **ESP32-S3-WROOM-1U** (external IPEX antenna variant; exposes native USB D+/D- pins on the module pinout) | IC-2 requires BLE 5 + Wi-Fi STA dual-mode; only S3 variant supports BLE 5. The `-1U` (external antenna) variant is chosen over the PCB-antenna `-1` because it (a) breaks out USB D+/D- so J9 USB-C doubles as debug port, eliminating the need for a separate programming header, and (b) lets the antenna mount inside the fairing tip area via an IPEX-to-SMA pigtail and SMA bulkhead pass-through, away from the IP67 enclosure's metal walls and PCB ground pour. ~5-10 RMB price premium over `-1`. Spec §3.1 wording ("ESP32-WROOM-32E") is loose and superseded by IC-1/IC-2. |
 | D2 | Dual MOSFET topology for servo kill (FMEA #9) | **Dual P-channel high-side, in series on the 7.4 V servo rail.** Both gates pulled to source (7.4 V) via 10 kΩ; ATtiny85 drives an NPN level-shifter that pulls both gates to GND through 1 kΩ to enable. | High-side switching keeps servo GND continuous with PCB GND (avoids ground-loop issues with current-sense returns). P-channel on the rail (rather than N-channel low-side) means: gate fully off = 0 V across gate-source = guaranteed OFF; single MOSFET "stuck closed" is rare but in series doubles the prob-of-bypass to ~0 (FMEA #9 mitigation). Trade-off: P-channel Rds(on) is higher than N-channel for same price — chose `AO3401A` × 2 (Rds(on) 60 mΩ @ Vgs=−4.5V, Id up to 4 A continuous, two in series = 120 mΩ × 8 A peak = 0.96 V drop @ peak, 0.45 V @ average 3.75 A: acceptable). |
-| D3 | Debug interface | **USB-C is the debug port (J9 doubles as PD input + USB-CDC over native USB on ESP32-S3).** ESP32-S3 has native USB peripheral; no separate USB-UART chip needed. A 6-pin 1.27 mm pitch SMD pad land (`J12`) is added on the PCB for emergency JTAG via ESP-PROG, **inside the IP67 enclosure** (not externally accessible). | Saves cost and one external connector. Marine-grade external serial header is unjustified for a board that will live closed inside an IP67 box once tuned. |
+| D3 | Debug interface | **USB-C J9 is the debug port — doubles as PD power input AND USB-CDC debug over the ESP32-S3-WROOM-1U native USB peripheral.** A 1.5 kΩ pull-up on D+ to +3V3 identifies the board as a full-speed USB device per spec. No separate internal programming header is needed (the previously-planned J12 is dropped per master-plan Decision 3). | The ESP32-S3-WROOM-1U variant exposes USB D+/D- on the module pinout (the PCB-antenna `-1` variant does NOT), so the J9 USB-C connector can carry both PD VBUS and the USB device data lines. One external connector covers power input, OTA fallback, and serial console. |
 | D4 | CAN transceiver for future v2 motorcycle CAN tap | **Not populated in v1.** Reserve 2 pads + footprint (SN65HVD230 SOIC-8) and 2 GPIO routing on PCB silk only — NC in v1 schematic. Saves cost; populates only when v2 needs it. | Spec §4.3 explicitly says v1 uses no motorcycle electrical tap. Footprint reservation is cheap insurance. |
-| D5 | HX711 strain-gauge GPIO assignment | **HX711 SCK = GPIO 20, HX711 DT = GPIO 21.** Both are free per IC-1's pin map (IC-1 lists GPIO 0, 4-19; 20-21 are unassigned on ESP32-S3-WROOM-1 and broken out on the module). Connector J11 (4-pin Marine IP67: VCC 5V / GND / SCK / DT). | These GPIOs are unused in IC-1 and have no strapping function on ESP32-S3. **This addition is flagged as an RFC for master-plan IC-1 update** — this electronics plan implements it now (PCB needs definite pin assignment), and master plan should be amended at next revision to formally add HX711 / J11. |
-| D6 | Encoder PCB outline | **22 × 18 mm, 2-layer FR4, 1.6 mm thick.** Matches mechanical plan's encoder boss footprint (Task 13 / 15). 2× ∅2.5 mm mounting holes on 16 mm centers. AS5600 chip placed on the **bottom side** so chip face points toward the wing-root magnet; J5/J6 pigtail header on top side. | Tight enough to fit boss; mounting hole pattern matches sub-frame counter-bores. |
+| D5 | Strain-gauge monitoring (FMEA #22) — main-board J11 vs standalone module | **Dropped from main PCB; implemented as a separate standalone BLE module (own MCU + HX711 + LiPo + BLE radio).** That module pairs with the Flutter app directly and uploads to its own Firestore collection. The main controller does NOT read the strain gauge. J11 / HX711 / GPIO 20-21 are all removed from this plan. GPIO 20-21 freed up by this decision are immediately consumed by Decision 3 (GPIO 20 → USB_DP) and the FAULT_LED relocation (GPIO 21 → FAULT_LED, formerly on GPIO 19 which is now USB_DM). See the "Pin-map reshuffle history" note in Task 30 for the full mapping. | Per master-plan Decision 2: decoupling the strain gauge from the main loop simplifies the main controller's wire harness, removes a 4-pin marine connector and IP67 cable run, and lets the strain-gauge subsystem be developed and validated independently on its own future implementation plan. The mechanical plan retains the strain-gauge pocket for when the standalone module is built. |
+| D6 | Encoder PCB outline | **22 × 18 mm, 2-layer FR4, 1.6 mm thick.** Matches mechanical plan's encoder boss footprint (Task 13 / 15). 2× ∅2.5 mm mounting holes on 16 mm centers. AS5600L chip placed on the **bottom side** so chip face points toward the wing-root magnet; J5/J6 pigtail header on top side. | Tight enough to fit boss; mounting hole pattern matches sub-frame counter-bores. |
+| D7 | Antenna mounting (consequence of D1 = ESP32-S3-WROOM-1U) | **IPEX U.FL → SMA-female pigtail (~10 cm) routed inside the IP67 enclosure to a SMA bulkhead pass-through with O-ring seal; SMA male puck antenna mounts on the inside of the fairing tip area, NOT exposed to weather.** New BOM lines: IPEX-to-SMA pigtail + SMA bulkhead w/ O-ring + 2.4 GHz puck antenna (~30 RMB total). | The module's IPEX connector requires an external antenna; the SMA-bulkhead approach keeps the IP67 seal intact while letting the antenna live in a low-RF-shielding region of the fairing. |
 
 ---
 
@@ -64,7 +67,7 @@ All files live under `D:/WorkSpace/Starling/pcb/`. This directory does not yet e
 | `pcb/starling.kicad_pro` | Task 1 | Main board KiCad project file |
 | `pcb/starling.kicad_sch` | Tasks 3-15 | Main board schematic (multi-sheet: root + power + MCU + watchdog + sensors + drivers + connectors + fuses) |
 | `pcb/starling.kicad_pcb` | Tasks 17-23 | Main board PCB layout, 100×120 mm 2-layer FR4 ENIG |
-| `pcb/lib/symbols/starling-symbols.kicad_sym` | Task 2 | Custom schematic symbols (ESP32-S3-WROOM-1, ATtiny85, BMI270, AS5600, INA219, USB-PD trigger CH224K, AO3401A, SN65HVD230) |
+| `pcb/lib/symbols/starling-symbols.kicad_sym` | Task 2 | Custom schematic symbols (ESP32-S3-WROOM-1U, ATtiny85, BMI270, AS5600L, INA219, USB-PD trigger CH224K, AO3401A, SN65HVD230) |
 | `pcb/lib/footprints/starling-fp.pretty/` | Task 2 | Custom footprints folder; one `.kicad_mod` per non-standard part |
 | `pcb/lib/3dmodels/` | Task 28 | STEP/WRL 3D models for custom footprints |
 | `pcb/encoder/encoder.kicad_pro` | Task 16 | Encoder PCB project (separate KiCad project) |
@@ -111,8 +114,10 @@ All files live under `D:/WorkSpace/Starling/pcb/`. This directory does not yet e
 The README must document:
 - Two KiCad projects (main + encoder), board sizes (100×120 mm + 22×18 mm), 2-layer FR4 ENIG 1.6 mm.
 - IC-1 / IC-2 / IC-6 bindings with one-line summary each.
-- ESP32-S3-WROOM-1 selection (and the §3.1 "ESP32-WROOM-32E" wording supersession).
-- All J1-J11 connector identities + connector vendor (TE Connectivity DT series or AMASS XT/MR series for Marine IP67; selected in Task 10).
+- ESP32-S3-WROOM-1U selection (external IPEX antenna + native USB pin breakout) and the §3.1 "ESP32-WROOM-32E" wording supersession.
+- Scope note: strain-gauge monitoring (FMEA #22) is OUT OF SCOPE for this PCB — it lives on a separate standalone BLE module that will have its own implementation plan.
+- All J1, J3-J10 connector identities + connector vendor (TE Connectivity DT series or AMASS XT/MR series for Marine IP67; selected in Task 10). J9 is dual-purpose (PD + USB-CDC debug). J11 and J12 are not used on this board.
+- Antenna mounting: IPEX-to-SMA pigtail + SMA bulkhead + puck antenna inside the fairing tip.
 - LCSC + JLCPCB Extended parts library policy: Basic preferred (cheaper assembly), Extended permitted with $3-per-unique-part assembly upcharge.
 - Vibration design rules: zero TH parts; SMD parts > 0.5 g require adhesive footprint (called out in BOM/CPL); large electrolytic caps replaced with ceramic + polymer where possible.
 - Vendor: JLCPCB SMT assembly, 5-piece minimum, 5-7 day lead + 5-7 day ship to China.
@@ -143,16 +148,24 @@ Open KiCad 8.x. File → New Project → location `D:/WorkSpace/Starling/pcb/`, 
 Two KiCad 8.x projects:
 
 - `starling.kicad_*` — main board, 100 × 120 mm, 2-layer FR4 ENIG 1.6 mm
-- `encoder/encoder.kicad_*` — AS5600 magnetic encoder board, 22 × 18 mm, 2-layer
+- `encoder/encoder.kicad_*` — AS5600L magnetic encoder board, 22 × 18 mm, 2-layer
   FR4 ENIG 1.6 mm. One per wing (2 total ordered).
+
+## Scope
+
+This package covers ONLY the main controller board + AS5600L encoder PCB.
+The strain-gauge monitoring system (FMEA #22) is implemented as a SEPARATE
+standalone BLE module (own MCU + HX711 + LiPo + BLE radio) and is out of
+scope for this plan — see master-plan Decision 2.
 
 ## Bound Interface Contracts
 
-- **IC-1** (master plan): all connector pinouts (J1-J9) and the ESP32-S3 MCU
-  pin map are implemented byte-for-byte. J11 (HX711) is added in this plan
-  pending master-plan IC-1 amendment.
-- **IC-2** (master plan): BLE 5 + Wi-Fi STA → ESP32-S3-WROOM-1 (NOT the
-  ESP32-WROOM-32E informally mentioned in spec §3.1 — IC-1/IC-2 supersede).
+- **IC-1** (master plan): all connector pinouts (J1, J3-J10) and the ESP32-S3 MCU
+  pin map are implemented byte-for-byte. J9 USB-C is dual-purpose (PD power input
+  AND USB-CDC debug via ESP32-S3-WROOM-1U native USB). No J11, no J12.
+- **IC-2** (master plan): BLE 5 + Wi-Fi STA → ESP32-S3-WROOM-1U (external IPEX
+  antenna variant, exposes native USB pins; NOT the ESP32-WROOM-32E informally
+  mentioned in spec §3.1 — IC-1/IC-2 supersede).
 - **IC-6** (master plan): servo rail 7.4 V/8 A, MCU rail 5 V/3 A, USB-C PD
   9V/5A input, 5 A main fuse + 1 A servo fuse, supercap brownout buffer.
 
@@ -235,7 +248,7 @@ The following parts need symbol + footprint. For parts in JLCPCB Basic library, 
 
 | Designator family | Part | KiCad standard? | LCSC PN (preferred) | Source |
 |---|---|---|---|---|
-| U1 | ESP32-S3-WROOM-1-N16R8 (16 MB flash, 8 MB PSRAM) | yes (KiCad 8 has `RF_Module:ESP32-S3-WROOM-1`) | C2913204 | KiCad std lib |
+| U1 | ESP32-S3-WROOM-1U-N16R8 (16 MB flash, 8 MB PSRAM, external IPEX U.FL antenna, native USB pins broken out) | yes (KiCad 8 has `RF_Module:ESP32-S3-WROOM-1U`) | C2913201 | KiCad std lib |
 | U2 | ATtiny85-20SU (SOIC-8) | yes (`MCU_Microchip_ATtiny:ATtiny85-20S`) | C5630 | KiCad std lib |
 | U3 | BMI270 (LGA-14, 2.5×3 mm) | no | C485756 | EasyEDA import |
 | U4 | CH224K USB-PD sink trigger (ESSOP-10) | no | C970725 | EasyEDA import |
@@ -244,12 +257,15 @@ The following parts need symbol + footprint. For parts in JLCPCB Basic library, 
 | U7, U8 | INA219AIDCNR I²C current monitor (SOT-23-8) | yes (`Sensor:INA219AIDCN`) | C138396 | KiCad std lib |
 | Q1, Q2 | AO3401A P-channel MOSFET (SOT-23) — servo kill series pair | yes (`Transistor_FET:AO3401A`) | C15127 | KiCad std lib |
 | Q3 | MMBT3904 NPN (SOT-23) — ATtiny85 gate driver | yes | C20526 | KiCad std lib |
-| J5/J6 mate, encoder PCB | AS5600 ASOM (SOIC-8) | no | C78757 | EasyEDA import |
+| J5/J6 mate, encoder PCB | AS5600L (MSOP-8, factory I²C addr 0x40 / 0x41 strap-selectable) | no | C2843107 | EasyEDA import |
+| Antenna kit (consequence of -1U variant) | IPEX U.FL → SMA-female pigtail ~10 cm | no | C500618 | LCSC |
+| Antenna kit | SMA-female bulkhead, O-ring sealed | no | C500625 | LCSC / Aliexpress |
+| Antenna kit | 2.4 GHz puck antenna, SMA-male, 3 dBi | no | C606556 | LCSC / Aliexpress |
 | J10 | SMD MicroSD socket (push-pull, hinge-type, e.g. Molex 503398-1892) | no | C91145 (Hyplus DM3D-SF) | EasyEDA import |
 | Supercap | 5.5 V 1 F radial SMD (e.g. AVX BestCap BZ015B503ZSB) | no | C68211 | EasyEDA import |
 | F1 (5 A main) | Littelfuse 0451005.MRL SMD slow-blow 5 A 125 V (1206) | yes (`Fuse:Fuse`) — generic symbol; custom 1206 footprint OK | C234798 | KiCad std lib |
 | F2 (1 A servo) | Littelfuse 0451001.MRL SMD 1 A (1206) | yes — same generic Fuse symbol | C181774 | KiCad std lib |
-| Marine IP67 connectors J1, J3-J9, J11 | TE DT04 series PCB-tab variants (board-edge mount) | no — vendor STEP only | TE part numbers vary by pin count (see Task 10) | TE 3D model + custom KiCad footprint |
+| Marine IP67 connectors J1, J3-J8 | TE DT04 series PCB-tab variants (board-edge mount) | no — vendor STEP only | TE part numbers vary by pin count (see Task 10) | TE 3D model + custom KiCad footprint |
 | SN65HVD230D CAN transceiver (D6 reservation) | yes (`Interface_CAN_LIN:SN65HVD230D`) | C12084 | KiCad std lib |
 
 - [ ] **Step 2.2: Install `easyeda2kicad`**
@@ -264,7 +280,7 @@ Verify: `easyeda2kicad --help` runs and prints help text.
 
 ```powershell
 cd D:/WorkSpace/Starling/pcb/lib
-$parts = @("C485756","C970725","C111887","C78757","C91145","C68211")
+$parts = @("C485756","C970725","C111887","C2843107","C91145","C68211")
 foreach ($p in $parts) {
   easyeda2kicad --full --lcsc_id=$p --output ./starling
 }
@@ -295,11 +311,11 @@ This writes entries to `pcb/sym-lib-table` and `pcb/fp-lib-table` (project-local
 
 - [ ] **Step 2.5: Verify libraries loaded**
 
-In KiCad's schematic editor, Place → Add Symbol → search "AS5600". The custom symbol should appear under `starling-symbols`.
+In KiCad's schematic editor, Place → Add Symbol → search "AS5600L". The custom symbol should appear under `starling-symbols`.
 
-In PCB editor, Place → Add Footprint → search "AS5600". The custom footprint should appear under `starling-fp`.
+In PCB editor, Place → Add Footprint → search "AS5600L". The custom footprint should appear under `starling-fp`.
 
-- [ ] **Step 2.6: Build TE DT04 footprint placeholders (J1-J9, J11)**
+- [ ] **Step 2.6: Build TE DT04 footprint placeholders (J1, J3-J8)**
 
 The TE Connectivity DT04 family is a Marine-grade IP67 series with PCB-tab variants. Because exact part numbers depend on pin count and the user may substitute AMASS MR-series for cost, this task creates **generic PCB-tab footprints** that match TE DT04 dimensions and accept either vendor:
 
@@ -309,8 +325,7 @@ The TE Connectivity DT04 family is a Marine-grade IP67 series with PCB-tab varia
 | J3 wheel Hall, J4 brake Hall | 3 | 1×3, 2.54 mm | `MarineIP67_3pin` |
 | J5, J6 encoders | 5 | 1×5, 2.54 mm | `MarineIP67_5pin` |
 | J7, J8 servos | 4 | 2×2, 2.54 mm | `MarineIP67_4pin` (same as J1) |
-| J9 USB-C | USB-C 24-pin SMD | KiCad std `USB_C_Receptacle_GCT_USB4085` | (use std) |
-| J11 HX711 | 4 | 2×2, 2.54 mm | `MarineIP67_4pin` (reused) |
+| J9 USB-C | USB-C 24-pin SMD (dual-purpose PD + USB-CDC; D+/D- wired to ESP32-S3-WROOM-1U native USB) | KiCad std `USB_C_Receptacle_GCT_USB4085` | (use std) |
 
 In KiCad footprint editor, create three new footprints in `starling-fp.pretty`:
 1. `MarineIP67_3pin.kicad_mod` — 3× SMD pads 2.0 × 1.5 mm on 2.54 mm pitch, 2× ∅2.5 mm non-plated mounting holes 5 mm either side, courtyard 14 × 10 mm.
@@ -333,7 +348,7 @@ In `easyeda2kicad` pull `C82942` and verify symbol + footprint imported into `st
 
 ```bash
 git add pcb/lib/ pcb/sym-lib-table pcb/fp-lib-table pcb/starling.kicad_pro
-git commit -m "elec: add custom symbol + footprint libraries (BMI270, AS5600, CH224K, MP9486A, MicroSD, supercap, Marine IP67)"
+git commit -m "elec: add custom symbol + footprint libraries (BMI270, AS5600L, CH224K, MP9486A, MicroSD, supercap, Marine IP67, IPEX/SMA antenna kit)"
 ```
 
 ---
@@ -357,7 +372,7 @@ Header block on root sheet:
 - Title: "Starling Active Aero — Main Board"
 - Rev: 1.0
 - Date: 2026-05-17
-- Note: "ESP32-S3-WROOM-1 supersedes spec §3.1 ESP32-WROOM-32E per IC-1 + IC-2."
+- Note: "ESP32-S3-WROOM-1U (external IPEX antenna, native USB pins) supersedes spec §3.1 ESP32-WROOM-32E per IC-1 + IC-2. J9 USB-C is dual-purpose: PD power input + USB-CDC debug."
 
 - [ ] **Step 3.2: Build root sheet in KiCad**
 
@@ -386,7 +401,7 @@ On root sheet, add global labels for power rails and inter-sheet signals:
 | `SUPPLY_VOLT_ADC` | 9V monitoring divider tap |
 | `FAULT_LED` | ESP32 fault status output |
 | `USER_BUTTON` | GPIO 0 button input |
-| `HX711_SCK`, `HX711_DT` | HX711 strain-gauge interface (D5) |
+| `USB_DP`, `USB_DM` | ESP32-S3-WROOM-1U native USB D+/D- routed to J9 USB-C data lines (USB-CDC debug) |
 | `INA_L_ALERT`, `INA_R_ALERT` | INA219 alert lines (optional, can be left NC) |
 
 - [ ] **Step 3.4: Verify**
@@ -402,12 +417,14 @@ git commit -m "elec: create hierarchical schematic skeleton (6 sub-sheets + glob
 
 ---
 
-## Task 4: Schematic — Power input (USB-C PD + ESD + 5 A main fuse)
+## Task 4: Schematic — Power input + USB-CDC debug (USB-C J9 dual-purpose) + 5 A main fuse
 
 **Files:**
 - Modify: `pcb/sheets/power.kicad_sch`
 
 - [ ] **Step 4.1: Define acceptance criteria — net list**
+
+J9 is dual-purpose per master-plan Decision 3: it accepts USB-PD 9V/5A power input AND carries the USB-CDC debug interface routed to the ESP32-S3-WROOM-1U's native USB pins.
 
 | Net | Source | Sinks |
 |---|---|---|
@@ -416,14 +433,17 @@ git commit -m "elec: create hierarchical schematic skeleton (6 sub-sheets + glob
 | `+9V_FUSED` | F1 output | MP9486A (servo buck input), TPS5430 (MCU buck input) |
 | `GND` | USB-C GND pins | global |
 | `CC1`, `CC2` | USB-C CC lines | CH224K CFG pins |
+| `USB_DP` | J9 D+ pair (combined) | ESP32-S3-WROOM-1U native USB D+ pin (cross-sheet to MCU) |
+| `USB_DM` | J9 D- pair (combined) | ESP32-S3-WROOM-1U native USB D- pin (cross-sheet to MCU) |
 
 Components on this sheet:
-- J9: USB-C receptacle 24-pin SMD (`USB_C_Receptacle_GCT_USB4085`).
-- ESD protection: 6× USB-C-rated TVS diodes (e.g. SP3010-04UTG, one per data pair). Designator D1-D6.
+- J9: USB-C receptacle 24-pin SMD (`USB_C_Receptacle_GCT_USB4085`). Both D+ pairs (A6 + B6) tied together onto `USB_DP`; both D- pairs (A7 + B7) tied together onto `USB_DM`.
+- ESD protection: 6× USB-C-rated TVS diodes (e.g. SP3010-04UTG, one per data pair). Designator D1-D6. Place on the D+/D- nets close to J9.
 - CH224K (U4): USB-PD trigger configured for 9V output. CFG pins set via 22 kΩ to GND (CFG1) and float (CFG2-3) — per CH224K datasheet for 9V/3A request.
 - F1: Littelfuse 0451005.MRL 5 A 1206 fuse, between CH224K VOUT and the downstream rail.
 - TVS on `+VBUS_9V`: SMAJ12CA (12 V bidir TVS, surge protection).
 - Bulk + decoupling: C1 = 47 µF 25 V polymer (post-fuse), C2-C4 = 10 µF 16 V MLCC × 3 (post-fuse). On CH224K VBUS_IN side: 22 µF 25 V MLCC + 100 nF.
+- USB device identification: R_USB_DP = 1.5 kΩ pull-up from `USB_DP` to `+3V3` per USB 2.0 full-speed device spec. Designator R_DPUP (one of R-series at annotation). Place near J9.
 
 - [ ] **Step 4.2: Place components in EEschema**
 
@@ -437,7 +457,7 @@ Add C5 = 470 nF X7R on `+VBUS_9V` close to F1 for high-frequency decoupling.
 
 - [ ] **Step 4.4: Annotate and ERC**
 
-Tools → Annotate Schematic → Annotate. All U/J/F/R/C/D/L designators auto-fill. Tools → ERC → should report 0 errors, 0 warnings on this sheet (some unconnected-pin warnings on USB-C SBU/D+/D- are expected and acceptable; mark them with No-Connect flags).
+Tools → Annotate Schematic → Annotate. All U/J/F/R/C/D/L designators auto-fill. Tools → ERC → should report 0 errors, 0 warnings on this sheet (some unconnected-pin warnings on USB-C SBU pins are expected and acceptable; mark them with No-Connect flags. D+/D- are NOT no-connects — they are wired through to USB_DP / USB_DM and out to the MCU sheet for ESP32-S3-WROOM-1U native USB).
 
 - [ ] **Step 4.5: Verify part values match BOM intent**
 
@@ -457,7 +477,7 @@ In EEschema, double-click each component → set Value and add custom field "LCS
 
 ```bash
 git add pcb/sheets/power.kicad_sch
-git commit -m "elec(sch): power input — USB-C + CH224K PD trigger 9V + 5A main fuse + ESD"
+git commit -m "elec(sch): power input — USB-C dual-purpose (PD 9V + USB-CDC) + CH224K + 5A main fuse + ESD + D+ pull-up"
 ```
 
 ---
@@ -571,7 +591,7 @@ git commit -m "elec(sch): 9→5V MCU buck + supercap 4F brownout buffer + supply
 
 ---
 
-## Task 7: Schematic — ESP32-S3-WROOM-1 core MCU
+## Task 7: Schematic — ESP32-S3-WROOM-1U core MCU + native USB to J9
 
 **Files:**
 - Modify: `pcb/sheets/mcu.kicad_sch`
@@ -596,11 +616,13 @@ GPIO 15 → UART_GPS_RX (ESP-side RX ← GPS TX)
 GPIO 16 → HEARTBEAT_OUT  (10 Hz square wave to ATtiny85)
 GPIO 17 → ATTINY_RESET   (open-drain low-active)
 GPIO 18 → SUPPLY_VOLT_ADC (ADC1_CH7)
-GPIO 19 → FAULT_LED  (high-active, drives indicator LED through 1k)
+GPIO 19 → USB_DM        (native USB D- — routed to J9 USB-C data pair; ESP32-S3 native USB peripheral)
+GPIO 20 → USB_DP        (native USB D+ — routed to J9 USB-C data pair, with 1.5 kΩ pull-up on the power sheet)
 GPIO 0  → USER_BUTTON (also strapping pin — boot-mode select; safe because pulled high by module's internal 10k, button pulls low)
-GPIO 20 → HX711_SCK  (D5 — NEW per this plan, pending IC-1 amendment)
-GPIO 21 → HX711_DT   (D5 — NEW)
+GPIO 21 → FAULT_LED    (high-active, drives indicator LED through 1k; moved from GPIO 19 because GPIO 19 is now USB_DM)
 ```
+
+Note: on the ESP32-S3-WROOM-1U variant, GPIO 19 and GPIO 20 ARE the module's native USB D-/D+ pins and are broken out on the module pinout (unlike the PCB-antenna `-1` variant which keeps them internal). The previously-planned HX711 strain-gauge interface that used GPIO 20/21 has been dropped from this PCB entirely per master-plan Decision 2 — strain gauge now lives on a separate standalone BLE module.
 
 Also tied:
 - EN → 10 kΩ to `+3V3` + 100 nF to GND (reset RC)
@@ -610,11 +632,13 @@ Also tied:
 
 - [ ] **Step 7.2: Place ESP32-S3 module**
 
-Place U1 (ESP32-S3-WROOM-1, footprint `RF_Module:ESP32-S3-WROOM-1`). The module has 41 pins; connect per the pin map above. Use net labels on each GPIO pin matching the global labels established in Task 3.
+Place U1 (ESP32-S3-WROOM-1U, footprint `RF_Module:ESP32-S3-WROOM-1U`). The module has 41 pins plus a board-edge IPEX U.FL connector (no on-module PCB antenna — the connector breaks out to an external pigtail; see Task 28 for antenna mounting). Connect per the pin map above. Use net labels on each GPIO pin matching the global labels established in Task 3.
+
+Wire GPIO 19 → `USB_DM` and GPIO 20 → `USB_DP` global labels — these cross into the power sheet and out to J9's data pair (the pull-up on D+ lives on the power sheet, see Task 4 Step 4.1).
 
 - [ ] **Step 7.3: Add 3.3 V supply for ESP32-S3**
 
-The ESP32-S3-WROOM-1 module includes an internal LDO that takes 3.0-3.6 V on the 3V3 pin. We feed it from a dedicated **AMS1117-3.3 LDO** (U9) off the +5V rail:
+The ESP32-S3-WROOM-1U module includes an internal LDO that takes 3.0-3.6 V on the 3V3 pin. We feed it from a dedicated **AMS1117-3.3 LDO** (U9) off the +5V rail:
 - U9 = AMS1117-3.3, SOT-223. LCSC C6186.
 - Input cap C22 = 10 µF 10 V MLCC.
 - Output cap C23 = 22 µF 6.3 V MLCC + C24 = 100 nF X7R.
@@ -622,28 +646,23 @@ The ESP32-S3-WROOM-1 module includes an internal LDO that takes 3.0-3.6 V on the
 
 Connect ESP32-S3's `3V3` pin to `+3V3`. Add module decoupling: C25 = 10 µF + C26-C28 = 100 nF placed near 3V3 / GND pins (physical placement enforced in PCB layout Task 22).
 
-- [ ] **Step 7.4: Add EN circuit + USB native interface**
+- [ ] **Step 7.4: Add EN circuit + native USB routing**
 
 - EN (reset) pin: R12 = 10 kΩ pull-up to `+3V3`. C29 = 100 nF to GND. Test point TP1 (small 1.5 mm pad) on EN for debug.
-- ESP32-S3 native USB pins: D+ = GPIO 20 (CONFLICT — GPIO 20 is HX711_SCK above). **Resolve**: ESP32-S3 USB D+ is on GPIO 20, D- on GPIO 19 — but wait, the module routes USB to dedicated pins. **Re-checking the ESP32-S3-WROOM-1 datasheet**: USB D+/D- are on **GPIO 20 / GPIO 19** on the bare chip but are NOT routed externally on the WROOM-1 module pinout (they're internal-only on WROOM-1). For native USB, we'd need ESP32-S3-WROOM-1U or the bare chip.
-
-**Resolution**: native USB is not available on WROOM-1. **Decision update D3**: drop the USB-CDC debug-over-J9 idea. The debug path becomes: USB-C J9 = power input only. Add a separate **6-pin programming header** `J12` (1.27 mm pitch SMD, inside-enclosure) with: 3V3, GND, IO0, EN, U0RXD, U0TXD. This requires a USB-UART dongle for first programming and OTA fixes — acceptable since OTA over Wi-Fi handles routine updates per spec §6.8.
-
-Add J12 to MCU sheet. Footprint: `Connector_PinHeader_1.27mm:PinHeader_1x06_P1.27mm_Vertical_SMD`.
-
-Restore GPIO 20 + 21 to HX711_SCK / HX711_DT (Step 7.1 mapping stands).
+- ESP32-S3-WROOM-1U native USB pins (GPIO 19 = D-, GPIO 20 = D+) ARE broken out on this module variant. Wire them to the cross-sheet global labels `USB_DM` and `USB_DP` (defined on the power sheet, Task 4). The 1.5 kΩ pull-up on D+ (USB device-mode identification) is placed on the power sheet near J9, not here. Add small (22 Ω 0402) inline EMI/ESD termination resistors on each line is optional — defer to layout review.
+- No separate programming header is needed: J9 USB-C carries both PD power and USB-CDC debug (master-plan Decision 3). For emergency bootloader recovery, the USER_BUTTON (GPIO 0) + RESET (EN) tactile-button combination handles boot-mode entry, then the host PC enumerates the board over J9 USB-C in download mode and runs `esptool.py`.
 
 - [ ] **Step 7.5: Verify**
 
 ERC: 0 errors on MCU sheet. Tools → Cross-Reference → confirm every GPIO label maps to exactly one external pin.
 
-Pin-map cross-check against IC-1: open `docs/superpowers/plans/2026-05-17-active-aero-v1-master.md` and walk line-by-line through IC-1's GPIO list. Every assignment must match. **Document the J12 addition + HX711 GPIOs as an RFC for master plan in `pcb/README.md` change-log section**.
+Pin-map cross-check against IC-1: open `docs/superpowers/plans/2026-05-17-active-aero-v1-master.md` and walk line-by-line through IC-1's GPIO list. Every assignment must match. Confirm GPIO 19 = USB_DM, GPIO 20 = USB_DP, GPIO 21 = FAULT_LED, and that no GPIO is connected to a strain-gauge net (the entire HX711 subsystem has been removed from this PCB per master-plan Decision 2).
 
 - [ ] **Step 7.6: Commit**
 
 ```bash
 git add pcb/sheets/mcu.kicad_sch pcb/README.md
-git commit -m "elec(sch): ESP32-S3-WROOM-1 core + AMS1117-3V3 LDO + J12 prog header; IC-1 pin map honored"
+git commit -m "elec(sch): ESP32-S3-WROOM-1U core + AMS1117-3V3 LDO + native USB to J9; IC-1 pin map honored"
 ```
 
 ---
@@ -723,30 +742,19 @@ git commit -m "elec(sch): ATtiny85 watchdog + dual P-MOSFET series kill switch (
 
 - [ ] **Step 9.1: Define acceptance criteria**
 
-I²C bus participants (all on shared SDA / SCL):
-- BMI270 (U3, onboard), I²C addr = 0x68 (default, SDO pulled to GND)
-- INA219 left (U7, addr 0x40)
-- INA219 right (U8, addr 0x41)
-- AS5600 left (off-board via J5, addr 0x36)
-- AS5600 right (off-board via J6, addr 0x40 alternate)
+I²C bus participants (all on shared SDA / SCL). Master-plan IC-1 specifies **AS5600L** (factory I²C addr 0x40 / 0x41, ADDR pin selectable) — not the standard AS5600 — to allow two encoders to share the bus.
 
-Conflict: INA219 right at 0x40 collides with AS5600 right at 0x40. **Resolve**: change INA219 right to addr 0x44 (A1=VCC, A0=GND), update the schematic in Task 5 if needed (but actually, in Task 5 we used A0=VCC for U8 = 0x41 already — no conflict). Let me re-verify Task 5:
+There is no address overlap with the INA219s as long as the encoders use the 0x60-range alternate address straps. Allocation:
 
-In Task 5.1 (revised): U7 INA219 left = 0x40 (A0=GND, A1=GND), U8 INA219 right = 0x41 (A0=VCC, A1=GND).
-AS5600 left = 0x36 (ADDR pin grounded — default per AS5600 datasheet, fixed at 0x36; AS5600 has only ONE I²C address per chip, 0x36).
+| Device | Designator | I²C address | Strap |
+|---|---|---|---|
+| BMI270 | U3 | 0x68 | SDO pulled to GND |
+| INA219 left | U7 | 0x40 | A0=GND, A1=GND |
+| INA219 right | U8 | 0x41 | A0=VCC, A1=GND |
+| AS5600L left | encoder PCB U1 (via J5) | 0x60 | ADDR0=GND, ADDR1=GND on encoder PCB |
+| AS5600L right | encoder PCB U1 (via J6) | 0x61 | ADDR0=VCC, ADDR1=GND on encoder PCB |
 
-**Real conflict**: two AS5600s share 0x36. Cannot change address (AS5600 limitation). **Resolution**: use the AS5600L variant (LCSC C2843107) which has selectable addresses 0x40-0x4F via I²C address pin tied differently. The IC-1 originally said "AS5600" — supersede with AS5600L for both channels (mechanical interface is identical, footprint identical).
-
-Update IC-1 RFC note in pcb/README.md: "AS5600 → AS5600L (selectable I²C addr 0x40-0x4F) — mechanical interchange-compatible". 
-
-Final I²C address allocation:
-- BMI270 = 0x68
-- INA219 L = 0x40
-- INA219 R = 0x41
-- AS5600L L = 0x60 (one strapping setting)
-- AS5600L R = 0x61 (another strapping setting)
-
-(Updating the encoder PCB design in Task 16 accordingly.)
+The AS5600L (LCSC C2843107) is mechanically and electrically interchange-compatible with the standard AS5600 footprint, so the encoder PCB layout in Task 16 is unaffected by the part choice; only the strap-pin wiring differs.
 
 - [ ] **Step 9.2: Place BMI270**
 
@@ -789,12 +797,12 @@ ERC: 0 errors. Net `SDA` has expected pins: ESP32 GPIO8, BMI270 SDA, INA219 ×2 
 
 ```bash
 git add pcb/sheets/sensors.kicad_sch pcb/README.md
-git commit -m "elec(sch): BMI270 IMU on-board + I²C bus + GPS UART filter + Hall pull-ups (AS5600→AS5600L RFC)"
+git commit -m "elec(sch): BMI270 IMU on-board + I²C bus + GPS UART filter + Hall pull-ups (AS5600L addresses 0x60/0x61)"
 ```
 
 ---
 
-## Task 10: Schematic — External connectors J1, J3-J9, J11 (Marine IP67)
+## Task 10: Schematic — External connectors J1, J3-J9 (Marine IP67)
 
 **Files:**
 - Modify: `pcb/sheets/connectors.kicad_sch`
@@ -808,13 +816,12 @@ Cite IC-1 from master plan §"IC-1: 物理 / 电气连接器" verbatim for each 
 | J1 | GPS | 4-pin Marine IP67 | +3V3 | GND | UART_GPS_TX (ESP→GPS RX) | UART_GPS_RX (ESP←GPS TX) | — |
 | J3 | Wheel Hall (shielded cable) | 3-pin Marine IP67 | +5V | GND | HALL_WHEEL | — | — |
 | J4 | Brake Hall (shielded cable) | 3-pin Marine IP67 | +5V | GND | HALL_BRAKE | — | — |
-| J5 | AS5600L Left | 5-pin Marine IP67 | +3V3 | GND | SCL | SDA | ADDR strap (tied to GND via internal pcb wiring on encoder board for 0x60) |
-| J6 | AS5600L Right | 5-pin Marine IP67 | +3V3 | GND | SCL | SDA | ADDR strap (tied via R-divider on encoder board for 0x61) |
+| J5 | AS5600L Left | 5-pin Marine IP67 | +3V3 | GND | SCL | SDA | ADDR strap (tied to GND on encoder board → addr 0x60) |
+| J6 | AS5600L Right | 5-pin Marine IP67 | +3V3 | GND | SCL | SDA | ADDR strap (tied to VDD on encoder board → addr 0x61) |
 | J7 | Servo Left | 4-pin Marine IP67 | +7V4_L (post-INA shunt) | GND | SERVO_L_PWM | shield/drain | — |
 | J8 | Servo Right | 4-pin Marine IP67 | +7V4_R (post-INA shunt) | GND | SERVO_R_PWM | shield/drain | — |
-| J11 (NEW) | HX711 strain gauge | 4-pin Marine IP67 | +5V | GND | HX711_SCK | HX711_DT | — |
 
-J9 (USB-C PD input) was placed in Task 4 power sheet.
+J9 (USB-C PD input + USB-CDC debug, dual-purpose) was placed in Task 4 power sheet. There is no J11 or J12 on this PCB (strain gauge dropped per master-plan Decision 2; programming header dropped per master-plan Decision 3).
 
 - [ ] **Step 10.2: Place connector symbols**
 
@@ -840,9 +847,6 @@ I²C cables to AS5600L (can be 0.5-1 m):
 - D16, D17 on SDA at connector side.
 - D18, D19 on SCL at connector side.
 
-HX711:
-- D20, D21 on HX711_SCK, HX711_DT.
-
 All TVS = ESD9B5.0ST5G (LCSC C84296), SOD-923 0402 land.
 
 - [ ] **Step 10.4: Verify**
@@ -855,19 +859,20 @@ IC-1 compliance check (Task 10):
   J1.1=+3V3 ✓  J1.2=GND ✓  J1.3=UART_GPS_TX ✓  J1.4=UART_GPS_RX ✓
   J3.1=+5V ✓   J3.2=GND ✓  J3.3=HALL_WHEEL ✓
   J4.1=+5V ✓   J4.2=GND ✓  J4.3=HALL_BRAKE ✓
-  J5.1=+3V3 ✓  J5.2=GND ✓  J5.3=SCL ✓ J5.4=SDA ✓ J5.5=ADDR(GND strap)
-  J6: same as J5 (different ADDR strap)
+  J5.1=+3V3 ✓  J5.2=GND ✓  J5.3=SCL ✓ J5.4=SDA ✓ J5.5=ADDR(GND strap → 0x60)
+  J6: same as J5 (ADDR strap → VDD → 0x61)
   J7.1=+7V4_L ✓ J7.2=GND ✓ J7.3=SERVO_L_PWM ✓ J7.4=SHIELD/DRAIN
   J8: same as J7
-  J9: USB-C — see power sheet (Task 4)
-  J11.1=+5V J11.2=GND J11.3=HX711_SCK J11.4=HX711_DT  (NEW — RFC for IC-1)
+  J9: USB-C dual-purpose (PD 9V + USB-CDC) — see power sheet (Task 4)
+  (No J11 — strain gauge is a separate standalone module per master-plan Decision 2)
+  (No J12 — debug via J9 USB-C native USB per master-plan Decision 3)
 ```
 
 - [ ] **Step 10.5: Commit**
 
 ```bash
 git add pcb/sheets/connectors.kicad_sch
-git commit -m "elec(sch): external connectors J1, J3-J8, J11 with IC-1 pinout + TVS protection"
+git commit -m "elec(sch): external connectors J1, J3-J8 with IC-1 pinout + TVS protection"
 ```
 
 ---
@@ -973,7 +978,7 @@ Place SW1, SW2, C37, C38. Wire to GPIO 0 and EN nets.
 
 - [ ] **Step 13.3: Verify**
 
-ERC: 0 errors. Hover GPIO 0 net → see ESP32 IO0, SW1, J12 (programming header).
+ERC: 0 errors. Hover GPIO 0 net → see ESP32 IO0 and SW1 only (no programming header on this board; bootloader entry is done by holding SW1 + cycling EN with SW2 while connected to host PC via J9 USB-C).
 
 - [ ] **Step 13.4: Commit**
 
@@ -1049,19 +1054,19 @@ git commit -m "elec(sch): ERC clean + cross-sheet net audit pass + netlist expor
 - [ ] **Step 15.1: Define acceptance criteria**
 
 The main board schematic should have approximately:
-- ICs (U*): 10 (U1 ESP32-S3, U2 ATtiny85, U3 BMI270, U4 CH224K, U5 MP9486A, U6 TPS5430, U7+U8 INA219 ×2, U9 AMS1117-3V3, U10 SN65HVD230 reserved)
-- Connectors (J*): 10 (J1, J3, J4, J5, J6, J7, J8, J9, J10, J11, J12 = 11; J2 is IMU-onboard no connector, skip)
+- ICs (U*): 10 (U1 ESP32-S3-WROOM-1U, U2 ATtiny85, U3 BMI270, U4 CH224K, U5 MP9486A, U6 TPS5430, U7+U8 INA219 ×2, U9 AMS1117-3V3, U10 SN65HVD230 reserved)
+- Connectors (J*): 9 (J1, J3, J4, J5, J6, J7, J8, J9, J10 — no J2, no J11, no J12; J2 is IMU-onboard no connector, skip)
 - MOSFETs / Transistors (Q*): 3 (Q1, Q2 AO3401A, Q3 MMBT3904)
 - Fuses (F*): 2 (F1 5A, F2 1A)
 - LEDs (D22-D24): 3
-- TVS diodes (D1-D21 protection + D7 catch + D8-D9 supercap OR): ~21
+- TVS diodes (D1-D19 protection + D7 catch + D8-D9 supercap OR): ~19
 - Inductors (L*): 2 (L1 servo buck, L2 MCU buck)
-- Resistors (R*): ~35
-- Capacitors (C*): ~38
+- Resistors (R*): ~33 (includes the 1.5 kΩ D+ pull-up on J9; HX711 series/cap parts dropped)
+- Capacitors (C*): ~36
 - Crystals: 0 (ESP32-S3 module has internal)
 - Buttons (SW*): 2
 
-Total: ~125 components.
+Total: ~118 components.
 
 - [ ] **Step 15.2: Export and count**
 
@@ -1071,7 +1076,7 @@ kicad-cli sch export bom-csv starling.kicad_sch -o sch_bom_count.csv --fields "R
 (Import-Csv sch_bom_count.csv).Count
 ```
 
-Expected: 120-135 lines. If significantly outside, investigate missing or duplicate parts.
+Expected: 110-125 lines. If significantly outside, investigate missing or duplicate parts.
 
 - [ ] **Step 15.3: Spot-check critical parts present**
 
@@ -1085,7 +1090,7 @@ Expected output rows for: U1 (ESP32-S3), U2 (ATtiny85), U3 (BMI270), F1 (5A), F2
 
 ```bash
 git add pcb/sch_bom_count.csv
-git commit -m "elec(sch): BOM count sanity check — ~125 components verified"
+git commit -m "elec(sch): BOM count sanity check — ~118 components verified"
 ```
 
 (This CSV will be overwritten/regenerated in Task 26; the commit captures the snapshot.)
@@ -1105,7 +1110,7 @@ git commit -m "elec(sch): BOM count sanity check — ~125 components verified"
 - Two ∅2.5 mm non-plated mounting holes on 16 mm centers (boss screws).
 - AS5600L on bottom side (faces magnet on wing root). Chip-face Z position = bottom-side copper layer + 0.05 mm soldermask — known and used by mechanical plan to size boss depth (nominal 1.5 mm air gap target, ±1 mm shim allowed at assembly).
 - Pigtail header on top side: 5-pin 2.54 mm pitch SMD (mating to flying-lead cable that terminates in J5 / J6 marine connector at the main-board end).
-- Two board variants — same gerber, only difference is the strap-resistor position determining I²C address (0x60 vs 0x61). Use a 0Ω jumper R1 with two positions on the silkscreen ("L" or "R"). Solder one or the other at assembly.
+- Two board variants — same gerber, only difference is the AS5600L ADDR strap position determining I²C address (0x60 vs 0x61). Use a 0Ω jumper R1 with two positions on the silkscreen ("L" = GND → 0x60, "R" = VDD → 0x61). Solder one or the other at assembly. Note: the AS5600L's factory-default 0x40 / 0x41 (per the part's IC-1 spec line) can also be selected via the ADDR pin if desired; this board uses the 0x60 / 0x61 alternate range to keep clear of the INA219 I²C addresses.
 
 - [ ] **Step 16.2: Create the KiCad project**
 
@@ -1221,17 +1226,16 @@ Recommended placement (looking at top of board):
 
 | Edge | X (mm) | Y (mm) | Connector | Notes |
 |---|---|---|---|---|
-| Bottom | 15 | 0 | J9 USB-C | Power input, panel-mount cap external |
-| Bottom | 35 | 0 | J1 GPS (4-pin) |  |
-| Bottom | 55 | 0 | J3 Wheel Hall (3-pin) |  |
-| Bottom | 75 | 0 | J4 Brake Hall (3-pin) |  |
-| Bottom | 92 | 0 | J11 HX711 (4-pin) | NEW |
+| Bottom | 15 | 0 | J9 USB-C | Power input + USB-CDC debug (dual-purpose, ESP32-S3-WROOM-1U native USB); panel-mount sealed cap external |
+| Bottom | 40 | 0 | J1 GPS (4-pin) |  |
+| Bottom | 60 | 0 | J3 Wheel Hall (3-pin) |  |
+| Bottom | 80 | 0 | J4 Brake Hall (3-pin) |  |
 | Right | 100 | 30 | J5 AS5600L Left (5-pin) |  |
 | Right | 100 | 70 | J6 AS5600L Right (5-pin) |  |
+| Right | 100 | 100 | Antenna SMA bulkhead | IPEX→SMA pigtail from ESP32-S3-WROOM-1U U.FL connector; SMA puck antenna lives inside fairing tip; bulkhead has O-ring seal |
 | Top | 30 | 120 | J7 Servo Left (4-pin) | High current — keep close to MP9486A |
 | Top | 70 | 120 | J8 Servo Right (4-pin) |  |
 | Inside (top side) | 50 | 60 | J10 MicroSD | Lid-accessible |
-| Inside (top side) | 80 | 60 | J12 6-pin prog header | Inside enclosure |
 
 - [ ] **Step 18.2: Place each connector**
 
@@ -1239,7 +1243,7 @@ Use Move tool (M) to drag each connector footprint to its target position. Rotat
 
 - [ ] **Step 18.3: Strain-relief tabs**
 
-For J1, J3-J8, J11: add silkscreen guides indicating cable strain-relief tie-down points 5 mm inboard from each connector. Place ∅2.5 mm non-plated holes 5 mm inboard from connector pads for zip-tie strain relief.
+For J1, J3-J8: add silkscreen guides indicating cable strain-relief tie-down points 5 mm inboard from each connector. Place ∅2.5 mm non-plated holes 5 mm inboard from connector pads for zip-tie strain relief.
 
 - [ ] **Step 18.4: Verify**
 
@@ -1263,7 +1267,7 @@ git commit -m "elec(pcb): place all external connectors on board edges + zip-tie
 
 | Component | Location guidance | Rationale |
 |---|---|---|
-| U1 ESP32-S3 module | Center-top, antenna pointing UP (into open air, away from PCB ground pour) | Espressif keep-out: 6 mm clearance from antenna footprint to any copper |
+| U1 ESP32-S3-WROOM-1U module | Center-top; IPEX U.FL connector exposed for pigtail routing toward right-edge SMA bulkhead | The `-1U` variant has NO on-module PCB antenna — Espressif's 6 mm copper keep-out rule does NOT apply. The only constraint is keeping the U.FL connector unobstructed for cable mating, and routing the pigtail with no sharp bends (min bend radius 5 mm). |
 | U2 ATtiny85 | Adjacent to Q1+Q2 MOSFETs, < 10 mm trace to gate node | Short kill-switch control path |
 | U3 BMI270 IMU | **Near a board mounting hole** (e.g., (5, 60) — center-left edge, close to a mounting hole at (5, 5)/(5,115)), **far from servo current paths** (≥ 30 mm from MP9486A switching node and from servo connector traces) | Vibration: IMU best at mechanical center-of-mass-installation; magnetic: stay away from inductor L1 and high-current traces |
 | U4 CH224K PD trigger | Near J9 USB-C, < 15 mm trace | PD signaling integrity |
@@ -1273,9 +1277,9 @@ git commit -m "elec(pcb): place all external connectors on board edges + zip-tie
 | U9 AMS1117-3V3 | Adjacent to ESP32-S3 module 3V3 pin | Decoupling efficacy |
 | Supercap C18-C21 | Bottom-left, adjacent to TPS5430 output | Bulk hold-up |
 
-- [ ] **Step 19.2: Place ESP32-S3 module**
+- [ ] **Step 19.2: Place ESP32-S3-WROOM-1U module**
 
-Drag U1 to (50, 80). Rotate so antenna (top edge of module) points to +Y = toward the top edge. Verify the antenna keep-out region (≥ 6 mm from antenna to any copper) does not collide with J7/J8 placements. If conflict: move J7/J8 inward and ESP32 down slightly, OR rotate ESP32 90°.
+Drag U1 to (50, 80). Rotate so the IPEX U.FL connector (located on one short edge of the `-1U` module) faces the +X side, so the pigtail can run cleanly to the SMA bulkhead at (100, 100). No 6 mm copper keep-out needed (this is the external-antenna variant — no on-module PCB antenna).
 
 After visual check, lock ESP32 in place (right-click → Lock Footprint).
 
@@ -1304,7 +1308,7 @@ U9 at (50, 70) — directly under ESP32-S3 module's 3V3 pin. C22-C28 clustered a
 - [ ] **Step 19.8: Verify**
 
 Use the Measurement tool to confirm:
-- Antenna keep-out: 6 mm radius from ESP32-S3 antenna footprint has no other copper.
+- IPEX U.FL connector on U1: clear path to right-edge SMA bulkhead position at (100, 100); pigtail can be routed with min bend radius 5 mm.
 - IMU U3 to nearest mounting hole: < 15 mm.
 - IMU U3 to U5/L1 (servo buck SW node): ≥ 30 mm.
 - ATtiny85 U2 to Q1/Q2 gate: ≤ 10 mm trace possible.
@@ -1313,7 +1317,7 @@ Use the Measurement tool to confirm:
 
 ```bash
 git add pcb/starling.kicad_pcb
-git commit -m "elec(pcb): place major ICs — ESP32-S3 + ATtiny85 + IMU (mounting-hole proximate, servo-current-far) + DC/DC"
+git commit -m "elec(pcb): place major ICs — ESP32-S3-WROOM-1U + ATtiny85 + IMU (mounting-hole proximate, servo-current-far) + DC/DC"
 ```
 
 ---
@@ -1325,7 +1329,7 @@ git commit -m "elec(pcb): place major ICs — ESP32-S3 + ATtiny85 + IMU (mountin
 
 - [ ] **Step 20.1: Define acceptance criteria**
 
-- Bottom layer: solid GND pour over the entire board outline area (minus keep-out around antenna and high-current rails).
+- Bottom layer: solid GND pour over the entire board outline area (minus keep-out around high-current rails). No antenna keep-out is needed because the ESP32-S3-WROOM-1U uses an external antenna via IPEX/SMA pigtail.
 - Top layer: signal traces + selective copper fills for `+9V_FUSED`, `+7V4_SW`, `+5V`, `+3V3` rails (poured polygons rather than thin traces for high-current paths).
 - Servo rail (`+7V4_SW`) must be a poured area ≥ 5 mm wide between MP9486A output and J7/J8 to handle 8 A peak. Per IPC-2152 chart, 1 oz copper @ 30 °C rise needs ≥ 80 mil (2.0 mm) for 8 A; we'll use 5 mm (200 mil) for margin.
 - ≥ 30 stitching vias (∅0.6 mm via, 0.3 mm drill) connecting top GND pour to bottom GND plane, distributed evenly.
@@ -1416,7 +1420,7 @@ git commit -m "elec(pcb): high-current servo routing — 30mil+ traces, Kelvin I
 - All schematic-defined nets routed (zero "unrouted" in DRC).
 - Decoupling caps (C25-C28 for ESP32-S3, C22-C24 for AMS1117, C30-C31 for BMI270) physically placed within 3 mm of their associated IC's power pins.
 - I²C bus (SDA, SCL) routed as parallel pair where possible, kept away from high-current servo rail (≥ 5 mm separation).
-- USB D+/D− pairs (CH224K to USB-C J9): differential pair routing with 100 mil length matching (loose tolerance — USB 2.0 FS is forgiving).
+- USB D+/D− pair (J9 USB-C ↔ ESP32-S3-WROOM-1U GPIO 19/20): differential pair routing with 100 mil length matching (loose tolerance — USB 2.0 FS is forgiving). Keep traces short (< 60 mm), avoid stubs, route over continuous GND plane, and place the 1.5 kΩ D+ pull-up close to J9.
 - BMI270 placement: confirm ≥ 30 mm from L1, L2 (DC/DC inductors).
 
 - [ ] **Step 22.2: Route I²C**
@@ -1439,11 +1443,9 @@ HALL_WHEEL, HALL_BRAKE from J3, J4 → RC debounce (R22, C34 and R23, C35) → E
 
 HEARTBEAT_OUT (GPIO 16) → ATtiny85 PB0. ATTINY_RESET (GPIO 17) → 10k series → ATtiny85 PB5. Keep traces short and away from servo PWM lines.
 
-- [ ] **Step 22.7: Route HX711 path**
+- [ ] **Step 22.7: Route USB D+/D- pair**
 
-HX711_SCK (GPIO 20) → directly to J11 pin 3. HX711_DT (GPIO 21) → J11 pin 4. Add 22 Ω series and 22 pF to GND on each (R/C as planned in Task 10's TVS pattern — actually those were TVS only; the series/cap are added in this step: R33 = 22Ω, R34 = 22Ω, C39 = 22pF, C40 = 22pF).
-
-Wait — these need to be added in schematic too. **Backtrack**: add R33, R34, C39, C40 to `sheets/connectors.kicad_sch` HX711 net (and re-run ERC), then route here. Update Task 10 commit retroactively? **Decision**: do it inline now — open connector sheet, add the 4 parts, save, re-import netlist into PCB (Tools → Update PCB from Schematic). Then route.
+USB_DP (ESP32-S3 GPIO 20) ↔ J9 USB-C D+ combined pair. USB_DM (ESP32-S3 GPIO 19) ↔ J9 USB-C D- combined pair. Route as a differential pair on the top layer above the bottom GND plane, keep length < 60 mm, length-match within 100 mil, avoid via stubs. Place the 1.5 kΩ D+ pull-up (from Task 4) within 5 mm of J9.
 
 - [ ] **Step 22.8: Route remaining signals**
 
@@ -1468,7 +1470,7 @@ Measure tool: from BMI270 center to nearest SW node (MP9486A U5 inductor L1) —
 
 ```bash
 git add pcb/starling.kicad_pcb pcb/sheets/connectors.kicad_sch
-git commit -m "elec(pcb): route all signals — I²C / SPI / UART / Hall / HEARTBEAT / HX711; IMU isolated 30+mm from L1"
+git commit -m "elec(pcb): route all signals — I²C / SPI / UART / Hall / HEARTBEAT / USB D+/D-; IMU isolated 30+mm from L1"
 ```
 
 ---
@@ -1562,7 +1564,8 @@ Result: <PASS / FAIL with N issues>
 
 | Designator | LCSC PN | Status |
 |---|---|---|
-| U1 ESP32-S3-WROOM-1 | C2913204 | In stock |
+| U1 ESP32-S3-WROOM-1U | C2913201 | In stock |
+| Antenna kit (IPEX→SMA pigtail + SMA bulkhead + puck) | C500618 / C500625 / C606556 | In stock |
 | U2 ATtiny85 | C5630 | In stock |
 | ... | ... | ... |
 
@@ -2020,11 +2023,10 @@ Append:
 
 ### Programming first time
 
-1. Connect ESP-PROG (or USB-UART) to J12 (1.27 mm pitch 6-pin SMD pads).
-   Pin order: 3V3, GND, IO0, EN, U0RXD, U0TXD.
-2. Hold USER_BUTTON (GPIO 0 / SW1) → press RESET (SW2) → release RESET → release USER_BUTTON. ESP32-S3 in bootloader mode.
-3. Flash firmware via `esptool.py` (firmware plan provides exact command).
-4. Subsequent updates are OTA over Wi-Fi STA (firmware plan, IC-5).
+1. Connect host PC to J9 USB-C with a USB-C cable (no PD-only adapter — must be a real data-capable cable). The ESP32-S3-WROOM-1U's native USB peripheral enumerates as a USB-CDC device.
+2. Hold USER_BUTTON (GPIO 0 / SW1) → press RESET (SW2) → release RESET → release USER_BUTTON. ESP32-S3 enters ROM USB bootloader mode and re-enumerates as the Espressif download device.
+3. Flash firmware via `esptool.py` over the COM port assigned by the OS (firmware plan provides the exact command).
+4. After the first flash, subsequent firmware updates can use either USB-CDC over J9 OR OTA over Wi-Fi STA (firmware plan, IC-5).
 
 ### Calibration
 
@@ -2043,7 +2045,7 @@ Append:
 - [ ] 5 V at supercap bank: 5.0 ± 0.1 V
 - [ ] 3.3 V at AMS1117 output: 3.30 ± 0.05 V
 - [ ] Heartbeat LED blinks at 10 Hz
-- [ ] ESP-PROG enumerates ESP32-S3 over J12
+- [ ] Host PC enumerates ESP32-S3-WROOM-1U as USB-CDC device when J9 USB-C is connected with a data-capable cable
 - [ ] I²C scan finds: 0x40, 0x41, 0x60, 0x61, 0x68 (when encoder boards plugged in)
 - [ ] MicroSD card mounts when inserted
 - [ ] Supercap voltage holds ≥ 4.5 V for 5 s after USB-C disconnect (brownout buffer works)
@@ -2076,7 +2078,7 @@ git commit -m "elec: RFQ packets (gerber + BOM + CPL + cover letter) + post-asse
 - [ ] **Step 30.1: Define acceptance criteria**
 
 - README has a "Cross-Plan Handoff" section listing every interface this PCB exposes to the firmware, mechanical, and integration plans.
-- Master plan has a note flagging the pending IC-1 amendments (J11 HX711, AS5600 → AS5600L, J12 programming header).
+- Master plan IC-1 has been amended (by the controller) to AS5600L, ESP32-S3-WROOM-1U, no J11, no J12 — this plan is consistent with that amendment.
 - All Self-Review checklist items from this plan can be ticked off against committed files.
 
 - [ ] **Step 30.2: Append "Cross-Plan Handoff" to `pcb/README.md`**
@@ -2103,16 +2105,27 @@ This subsystem exposes these interfaces to other subsystem plans:
 | SUPPLY_VOLT | GPIO 18 (ADC1_CH7) | SUPPLY_VOLT_ADC | Divider 100k/22k from +9V_FUSED; nominal 1.62 V at 9V supply |
 | FAULT_LED | GPIO 19 | FAULT_LED | High-active drives D22 red LED |
 | USER_BUTTON | GPIO 0 | USER_BUTTON | Low-active (SW1 to GND); also boot strapping |
-| HX711_SCK | GPIO 20 | HX711_SCK | New per this plan, **RFC for IC-1 amendment** |
-| HX711_DT | GPIO 21 | HX711_DT | New per this plan |
+| USB_DM | GPIO 19 | USB_DM | ESP32-S3-WROOM-1U native USB D-, routed to J9 USB-C data pair |
+| USB_DP | GPIO 20 | USB_DP | ESP32-S3-WROOM-1U native USB D+, routed to J9 USB-C data pair; 1.5 kΩ pull-up to +3V3 for USB device identification |
+| FAULT_LED | GPIO 21 | FAULT_LED | High-active drives D22 red LED (moved from GPIO 19 because that's now USB_DM) |
+
+**Pin-map reshuffle history (post-RFC):** GPIO 20-21 had been previously assigned to an HX711 strain-gauge interface in earlier drafts. Master-plan Decision 2 dropped HX711 from this board (strain gauge → standalone BLE module), freeing GPIO 20 and GPIO 21. Master-plan Decision 3 then chose the ESP32-S3-WROOM-1U variant which routes native USB to GPIO 19 (D-) and GPIO 20 (D+). Net result:
+- GPIO 19: was FAULT_LED → now USB_DM (USB native).
+- GPIO 20: was HX711_SCK → now USB_DP (USB native).
+- GPIO 21: was HX711_DT → now FAULT_LED (relocated from GPIO 19) — or, if desired, can be left reserved / unused by relocating FAULT_LED to any other available GPIO. This plan uses GPIO 21 for FAULT_LED for minimal disruption.
+
+GPIO 20 and 21 are therefore not "reserved-unused" on the final board — they were freed by Decision 2 and immediately consumed (one by Decision 3's USB requirement, the other by the relocated FAULT_LED). Confirm with master-plan owner that this re-use is acceptable; if not, FAULT_LED can be relocated to any other free strapping-safe GPIO and GPIO 21 left as a labeled "reserved / future use" test point.
 
 ### To Mechanical (`2026-05-17-mechanical.md`)
 
-- Encoder PCB outline (22 × 18 mm × 1.6 mm) matches the sub-frame AS5600 boss footprint (mechanical plan Task 13 Step 9 / Task 15).
+- Encoder PCB outline (22 × 18 mm × 1.6 mm) matches the sub-frame AS5600L boss footprint (mechanical plan Task 13 Step 9 / Task 15).
 - AS5600L on bottom side; chip face Z = bottom-side soldermask. Sub-frame boss depth must position the chip face 1.5 ± 1 mm from the wing-root magnet plane (within IC-1's 0.5 – 3.0 mm allowed range).
 - Encoder PCB has 2× ∅2.5 mm mounting holes on 16 mm centers.
 - Main PCB outer envelope: 100 × 120 × 25 mm including tallest part (USB-C connector). IP67 enclosure inner clear volume must be ≥ 105 × 125 × 30 mm with 4× M3 standoff bosses at 5/95 × 5/115 mm pattern.
 - Servo box pigtail (mechanical plan) terminates at J7 / J8 mating half (4-pin Marine IP67).
+- Enclosure passthrough requirements: J9 USB-C panel-mount sealed cap (IP67 closure cap when not in use); SMA bulkhead with O-ring seal at right edge for the external 2.4 GHz antenna; both passthroughs must hold the enclosure's IP67 rating.
+- Antenna placement: SMA puck antenna lives INSIDE the fairing tip area (not exposed to weather); routed via IPEX→SMA pigtail (~10 cm) from the ESP32-S3-WROOM-1U module's U.FL connector to the SMA bulkhead. Mechanical plan must reserve a mounting tab inside the fairing tip for the puck antenna (~30 × 15 mm clear area).
+- Strain-gauge pocket on the sub-frames is retained per mechanical plan, but is NOT populated by this electronics package — it will be populated by a future standalone BLE strain-gauge module subsystem (separate plan).
 
 ### To Integration Test (`2026-05-17-integration.md`)
 
@@ -2120,24 +2133,26 @@ This subsystem exposes these interfaces to other subsystem plans:
 - Power-on sequence: USB-C → Heartbeat at 10 Hz → I²C bus scan.
 - Brownout test: pull USB-C, supercap rail holds 4.5+ V for 5 s.
 
-### RFC: IC-1 Amendments Requested
+### Master-plan IC-1 Amendments — APPLIED
 
-The following additions should be merged into master plan IC-1 at next revision:
+The following amendments were applied to master plan IC-1 by the controller before this PCB plan was finalized:
 
-1. **J11 HX711 strain-gauge connector** (4-pin Marine IP67: +5V / GND / HX711_SCK / HX711_DT). Wired to GPIO 20 / GPIO 21.
-2. **AS5600 → AS5600L** part substitution (different I²C address strapping — pair on 0x60 / 0x61 instead of conflicting 0x36 / 0x36).
-3. **J12 6-pin programming header** (inside enclosure, 1.27 mm pitch SMD, pinout 3V3 / GND / IO0 / EN / U0RXD / U0TXD).
+1. **Decision 1 (APPROVED):** AS5600 → AS5600L (factory I²C addr 0x40 / 0x41, ADDR-selectable). This electronics plan uses the 0x60 / 0x61 alternate ADDR-strap range on the encoder PCB to keep clear of the INA219 addresses.
+2. **Decision 2 (REJECTED main-board J11):** Strain-gauge monitoring (FMEA #22) is implemented as a SEPARATE standalone BLE module (own MCU + HX711 + LiPo + BLE), not on this main PCB. J11 / HX711 / GPIO 20-21 dropped from this PCB. The strain-gauge subsystem will have its own implementation plan.
+3. **Decision 3 (ESP32-S3-WROOM-1U + drop J12):** Module switched to the external-antenna `-1U` variant which exposes native USB pins. J9 USB-C is now dual-purpose (PD power input + USB-CDC debug). J12 internal programming header dropped. Antenna mounts inside the fairing tip via IPEX→SMA pigtail and a SMA bulkhead with O-ring seal in the IP67 enclosure.
 
-These were necessary to make the board functionally complete; mechanical and firmware plans should be cross-updated to acknowledge.
+Mechanical and firmware plans should be cross-updated to acknowledge: mechanical keeps the strain-gauge pocket but does NOT route its harness back to the main board; mechanical reserves space for the SMA antenna bulkhead and the inside-fairing puck antenna; firmware plan's pin map is GPIO 19 = USB_DM, GPIO 20 = USB_DP, GPIO 21 = FAULT_LED (relocated).
 ```
 
-- [ ] **Step 30.3: Update master plan note (escalation marker)**
+- [ ] **Step 30.3: Verify master plan note (post-amendment)**
 
-Open `docs/superpowers/plans/2026-05-17-active-aero-v1-master.md`. Find the "## 风险与未决项" (Risks / Open Items) section at the bottom. Append:
+Open `docs/superpowers/plans/2026-05-17-active-aero-v1-master.md`. IC-1 should already reflect:
+- AS5600L (factory addr 0x40 / 0x41, ADDR-pin selectable) — not AS5600.
+- ESP32-S3-WROOM-1U (external IPEX antenna, native USB exposed) — not ESP32-S3-WROOM-1.
+- No J11 (HX711 strain gauge is a separate standalone module).
+- No J12 (debug via J9 USB-C native USB).
 
-```markdown
-| R6 | IC-1 needs amendment for HX711 (J11), AS5600 → AS5600L, J12 prog header | Electronics plan documents these as RFCs. Owner to approve and bump IC-1 to v1.1 | Approve at next master plan review |
-```
+If any of those are not yet reflected in the master plan, append a note in the master plan's Risks/Open Items section flagging the inconsistency for the master-plan owner to reconcile.
 
 - [ ] **Step 30.4: Self-review against this plan's acceptance checklist**
 
@@ -2147,16 +2162,18 @@ Walk through and confirm:
 - [x] No TBD/TODO placeholders (verify by grep) → search next step
 - [x] Every task has exact file paths
 - [x] IC-1 / IC-2 / IC-6 referenced accurately
-- [x] J1-J11 covered (J1 sensors task, J3-J4 connectors, J5-J6 encoder + main, J7-J8 power + connectors, J9 power, J10 drivers, J11 connectors)
-- [x] MCU pin map per IC-1 implemented (except HX711 GPIO 20/21 — flagged as RFC)
-- [x] ESP32-S3-WROOM-1 chosen, supersession noted (D1)
+- [x] J1, J3-J10 covered (J1 sensors task, J3-J4 connectors, J5-J6 encoder + main, J7-J8 power + connectors, J9 power+USB-CDC, J10 drivers); J11 / J12 intentionally NOT on this board
+- [x] MCU pin map per amended IC-1 implemented (GPIO 19 = USB_DM, GPIO 20 = USB_DP, GPIO 21 = FAULT_LED)
+- [x] ESP32-S3-WROOM-1U chosen, supersession noted (D1)
 - [x] Dual MOSFET series for FMEA #9 (Q1 + Q2 P-channel)
 - [x] In-line fuses 5A + 1A (F1, F2)
 - [x] IMU placement note (Task 19, Task 22)
-- [x] Encoder PCB separately designed (Task 16)
-- [x] HX711 strain-gauge interface J11 included
+- [x] Encoder PCB separately designed (Task 16) — AS5600L on the encoder PCB
+- [x] HX711 strain-gauge interface is OUT OF SCOPE (separate standalone BLE module per master-plan Decision 2)
 - [x] No through-hole parts (vibration constraint, called out in README)
 - [x] Marine-grade IP67 connectors only (no JST)
+- [x] Antenna kit (IPEX→SMA pigtail + SMA bulkhead + puck antenna) in BOM
+- [x] J9 USB-C dual-purpose (PD + USB-CDC), 1.5 kΩ D+ pull-up
 - [x] All file outputs covered in File Structure section
 - [x] Vibration robustness in README's stack + adhesive plan in DFM report
 
@@ -2181,12 +2198,12 @@ git commit -m "elec: cross-plan handoff notes + RFC for IC-1 amendments + self-r
 
 This plan delivers, in 30 commits:
 
-- **Two KiCad 8 projects** — `pcb/starling.*` (main board, 100×120 mm, 2-layer FR4 ENIG, fully SMT, ~125 components) and `pcb/encoder/encoder.*` (AS5600L encoder board, 22×18 mm, 2-layer, one per wing, 2 install + 3 spare).
-- **Schematic** implementing IC-1's MCU pin map exactly, ESP32-S3-WROOM-1 (superseding spec §3.1's ESP32-WROOM-32E per IC-1/IC-2), ATtiny85 watchdog with dual P-MOSFET series kill switch (FMEA #9), BMI270 on-board IMU placed away from servo currents and near a mounting hole, USB-C PD 9V/5A input, MP9486A 9→7.4V servo buck with dual INA219 current monitors, TPS5430 9→5V MCU buck with 4× 1F supercap brownout buffer, SMD MicroSD socket, in-line fuses F1 (5A main) + F2 (1A servo), Marine IP67 connectors J1, J3-J9, J11.
-- **PCB layout** with GND plane, dedicated power polygons, 30 mil minimum traces for servo rail (8 A), Kelvin INA219 shunt sensing, 30+ stitching vias, all signals routed DRC-clean, JLCPCB DFM-PASS.
+- **Two KiCad 8 projects** — `pcb/starling.*` (main board, 100×120 mm, 2-layer FR4 ENIG, fully SMT, ~118 components) and `pcb/encoder/encoder.*` (AS5600L encoder board, 22×18 mm, 2-layer, one per wing, 2 install + 3 spare).
+- **Schematic** implementing IC-1's amended MCU pin map exactly, ESP32-S3-WROOM-1U (external IPEX antenna + native USB exposed; superseding spec §3.1's ESP32-WROOM-32E per IC-1/IC-2), ATtiny85 watchdog with dual P-MOSFET series kill switch (FMEA #9), BMI270 on-board IMU placed away from servo currents and near a mounting hole, USB-C J9 dual-purpose (PD 9V/5A input + USB-CDC debug over native USB), MP9486A 9→7.4V servo buck with dual INA219 current monitors, TPS5430 9→5V MCU buck with 4× 1F supercap brownout buffer, SMD MicroSD socket, in-line fuses F1 (5A main) + F2 (1A servo), Marine IP67 connectors J1, J3-J8.
+- **PCB layout** with GND plane, dedicated power polygons, 30 mil minimum traces for servo rail (8 A), Kelvin INA219 shunt sensing, USB D+/D- diff pair, 30+ stitching vias, all signals routed DRC-clean, JLCPCB DFM-PASS.
 - **Vibration-robust manufacturing rules**: zero through-hole, heavy SMD parts flagged with adhesive plan, no JST PH/XH (only Marine IP67 threaded connectors).
-- **Hand-off artifacts**: gerber ZIPs, JLCPCB-format BOM-Elec.csv + BOM-encoder.csv, CPL.csv + CPL-encoder.csv, 3D STEP exports for mechanical interference check, RFQ packets ready to upload to JLCPCB.
-- **Cross-plan dependencies honored**: encoder PCB matches mechanical plan's boss design; servo connectors mate with mechanical plan's pigtail; HX711 J11 ties into mechanical plan's strain-gauge install per FMEA #22.
-- **Open decisions resolved + flagged**: D1 ESP32-S3 chosen, D2 dual P-channel MOSFET series, D3 USB-C debug dropped → J12 6-pin SMD header inside enclosure, D4 CAN reserved DNP for v2, D5 HX711 on GPIO 20/21, D6 encoder PCB 22×18 mm. Items D5 and the AS5600→AS5600L substitution (Task 9) and J12 are flagged as RFCs for master plan IC-1 amendment in Task 30.
+- **Hand-off artifacts**: gerber ZIPs, JLCPCB-format BOM-Elec.csv (incl. IPEX→SMA pigtail + SMA bulkhead + puck antenna kit) + BOM-encoder.csv, CPL.csv + CPL-encoder.csv, 3D STEP exports for mechanical interference check, RFQ packets ready to upload to JLCPCB.
+- **Cross-plan dependencies honored**: encoder PCB matches mechanical plan's boss design; servo connectors mate with mechanical plan's pigtail; mechanical plan reserves SMA bulkhead passthrough + inside-fairing puck-antenna mount. Strain-gauge pocket on the sub-frames is retained but the harness does NOT come back to this board — strain gauge is a future standalone BLE module subsystem.
+- **Open decisions resolved (post-master-plan amendments)**: D1 ESP32-S3-WROOM-1U chosen (external antenna + native USB), D2 dual P-channel MOSFET series, D3 J9 USB-C is the debug port via native USB (no programming header needed; J12 dropped), D4 CAN reserved DNP for v2, D5 strain-gauge dropped from main board → separate standalone BLE module (J11 / HX711 / GPIO 20-21 removed; GPIO 20 → USB_DP, GPIO 21 → FAULT_LED), D6 encoder PCB 22×18 mm, D7 antenna kit (IPEX→SMA pigtail + SMA bulkhead + puck) inside fairing tip.
 
 **Plan complete and saved to `docs/superpowers/plans/2026-05-17-electronics.md`.**

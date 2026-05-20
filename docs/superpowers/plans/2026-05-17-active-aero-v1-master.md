@@ -67,8 +67,11 @@
 #define GPIO_HEARTBEAT_OUT      16    // 心跳输出给 ATtiny85
 #define GPIO_ATTINY_RESET       17    // 复位 ATtiny85
 #define GPIO_SUPPLY_VOLTAGE_ADC 18    // 主供电监测
-#define GPIO_FAULT_STATUS_OUT   19    // FAULT 状态指示 LED
+#define GPIO_USB_DM             19    // ESP32-S3 原生 USB D- (硬件固定)
+#define GPIO_USB_DP             20    // ESP32-S3 原生 USB D+ (硬件固定)
+#define GPIO_FAULT_STATUS_OUT   21    // FAULT 状态指示 LED (从 GPIO 19 迁出，腾出原生 USB)
 #define GPIO_USER_BUTTON        0     // 启动校准触发
+// GPIO 22-48: 保留 / 未使用 (含原 HX711 GPIO 20/21 — 应变片改走独立 BLE 模块)
 
 // I2C 地址（多设备共用 1 个 I2C 总线）
 // NOTE: 使用 AS5600L (NOT 标准 AS5600 — 后者地址固定 0x36 无法双芯片同总线)
