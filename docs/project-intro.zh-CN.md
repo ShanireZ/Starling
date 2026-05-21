@@ -1,34 +1,9 @@
-# Starling 项目简介
+# Starling Intro
 
-## 一句话简介
+## 简介
 
 Starling 是一套面向摩托车真实原型的主动前翼系统，通过电子控制的可变翼片提升刹车稳定性、前轮载荷管理、抗 wheelie 能力，并建立完整的路试数据闭环。
 
-## GitHub About 简介
+## Introduction
 
-Experimental active front aero system for motorcycles: adaptive winglets, ESP32 control, Flutter telemetry, Firebase logging, and track-day validation.
-
-## 中文简介
-
-Starling 是一个主动空气动力学摩托车改装原型项目。它的核心设想是在车头两侧安装可变角度翼片，让翼片在高速巡航、正常骑行、刹车减速、过弯和前轮抬起趋势出现时自动调整姿态，从而探索主动前翼对前轮抓地、刹车距离、车身稳定性和工程数据采集的实际价值。
-
-项目当前处于设计规格与 v1 实施计划阶段。v1 的目标不是做展示模型，而是在 4-6 个月内交付一台真实可上车验证的原型系统：机械部分包含 NACA 4412 倒装翼片、转轴、复位扭簧、舵机盒和双车型副框架；电子部分包含 ESP32-S3 主控、ATtiny85 独立看门狗、GPS、IMU、轮速、刹车、角度编码器和舵机供电；软件部分包含 100Hz 控制固件、Flutter Android App、Firebase 云端、OTA、二进制日志和 Python 离线分析工具。
-
-Starling 的工程哲学是“可观测性优先、失败保守、物理优先于软件”。翼片转轴被布置在 70% 弦长位置，配合复位扭簧，使断电或故障时翼片天然趋向贴平；独立看门狗可以在主控失效时切断舵机供电；所有测试都必须按台架、静态上车、低速、中速、赛道基线、主动气动赛道验证和长期耐久七个阶段逐级推进。
-
-v1 的关键验收指标是：赛道日主动气动启用后，100-0 km/h 刹车距离改善不少于 3%，同时加速、直线尾速和过弯稳定性不显著退步。它是一个以真实数据为中心的工程验证项目，而不是单纯的 CAD 或概念设计。
-
-## 开源协议建议
-
-Starling 不适合只用一个普通软件协议覆盖全部内容。更合适的是分层授权：
-
-- 硬件设计文件使用 CERN-OHL-S-2.0：覆盖 CAD、PCB、Gerber、机械图纸、BOM 和装配资料。
-- 软件代码使用 Apache-2.0：覆盖固件、App、云函数、Web 控制台、Python 分析器和脚本。
-- 文档资料使用 CC BY-SA 4.0：覆盖设计规格、实施计划、测试流程、手册和报告。
-
-这样既能保持软件生态友好，也能让硬件改型和安全相关改进尽量回流公开。如果未来更看重商业扩散，可以把硬件部分从 CERN-OHL-S-2.0 调整为 CERN-OHL-W-2.0 或 CERN-OHL-P-2.0。
-
-## 对外发布提醒
-
-公开前需要先清理所有真实 API Key、访问令牌、本地路径和私人配置。Starling 当前是实验性摩托车硬件，不是已认证产品；公开材料中应明确说明仅用于受控工程验证和封闭场地测试，不建议直接用于公共道路。
-
+Starling is an active front-aero system built around a real motorcycle prototype. Through electronically controlled variable winglets, it improves braking stability, manages front-wheel load, enhances anti-wheelie behavior, and establishes a complete road-test data feedback loop.

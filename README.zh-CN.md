@@ -35,26 +35,6 @@ v1 目标是在 4-6 个月内完成一台可工作的摩托车原型，并通过
 - 非侵入供电：v1 使用外置 USB-PD 充电宝，不接入摩托车原车电气系统。
 - 数据优先验证：以 100 Hz 频率写入 128 字节二进制日志帧，再进行本地和云端分析。
 
-## 仓库结构
-
-```text
-Starling/
-|-- docs/
-|   `-- superpowers/
-|       |-- specs/
-|       |   `-- 2026-05-17-active-front-aero-design.md
-|       `-- plans/
-|           |-- 2026-05-17-active-aero-v1-master.md
-|           |-- 2026-05-17-mechanical.md
-|           |-- 2026-05-17-electronics.md
-|           |-- 2026-05-17-firmware.md
-|           |-- 2026-05-17-app.md
-|           |-- 2026-05-17-cloud.md
-|           `-- 2026-05-17-integration.md
-```
-
-计划中的实现目录包括 `cad/`、`pcb/`、`firmware/`、`app/`、`cloud/`、`analyzer/`、`tests/` 和 `scripts/`。
-
 ## 开发计划
 
 v1 由 `docs/superpowers/plans/2026-05-17-active-aero-v1-master.md` 统一控制。该计划定义共享接口契约和里程碑门禁：
@@ -68,7 +48,7 @@ v1 由 `docs/superpowers/plans/2026-05-17-active-aero-v1-master.md` 统一控制
 7. Gate G：完成 aero 禁用的赛道基线。
 8. Gate H：完成主动气动验证。
 
-所有子系统工作都必须追溯到设计规格和 master plan 的接口契约。GPIO、BLE schema、二进制日志帧、查找表格式或 Firebase schema 不能静默变更；需要先修订 master plan。
+所有子系统工作都必须追溯到设计规格和 master plan 的接口契约。GPIO、BLE schema、二进制日志帧、查找表格式或 Firebase schema 不能静默变更，需要先修订 master plan。
 
 ## 安全说明
 

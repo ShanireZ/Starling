@@ -35,26 +35,6 @@ The project covers six coordinated subsystems:
 - Non-invasive power: v1 runs from an external USB-PD power bank instead of tapping the motorcycle electrical system.
 - Data-first validation: 128-byte binary frames logged at 100 Hz to SD card, then analyzed locally and in the cloud.
 
-## Repository Layout
-
-```text
-Starling/
-|-- docs/
-|   `-- superpowers/
-|       |-- specs/
-|       |   `-- 2026-05-17-active-front-aero-design.md
-|       `-- plans/
-|           |-- 2026-05-17-active-aero-v1-master.md
-|           |-- 2026-05-17-mechanical.md
-|           |-- 2026-05-17-electronics.md
-|           |-- 2026-05-17-firmware.md
-|           |-- 2026-05-17-app.md
-|           |-- 2026-05-17-cloud.md
-|           `-- 2026-05-17-integration.md
-```
-
-Planned implementation directories include `cad/`, `pcb/`, `firmware/`, `app/`, `cloud/`, `analyzer/`, `tests/`, and `scripts/`.
-
 ## Development Plan
 
 The v1 plan is controlled by `docs/superpowers/plans/2026-05-17-active-aero-v1-master.md`. It defines shared interface contracts and milestone gates:
@@ -68,7 +48,7 @@ The v1 plan is controlled by `docs/superpowers/plans/2026-05-17-active-aero-v1-m
 7. Gate G: track baseline established with aero disabled.
 8. Gate H: active aero validation complete.
 
-All subsystem work should trace back to the design spec and the master interface contracts. Silent protocol changes are not allowed; update the master plan first when pin maps, BLE schemas, binary frame layouts, lookup table formats, or Firebase schemas change.
+All subsystem work should trace back to the design spec and the master interface contracts. Silent protocol changes are not allowed, update the master plan first when pin maps, BLE schemas, binary frame layouts, lookup table formats, or Firebase schemas change.
 
 ## Safety Notice
 
