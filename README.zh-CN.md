@@ -2,9 +2,9 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-Starling 是一套面向摩托车真实原型的主动前翼系统。它通过电子控制的车头两侧可变翼片，探索自适应空气动力学对刹车稳定性、前轮载荷、抗 wheelie 能力和路试数据闭环的实际价值。
+Starling is an experimental active front aerodynamic system for motorcycles. It uses electronically controlled side-mounted front winglets to explore how adaptive aero can improve braking stability, front-wheel load, anti-wheelie behavior, and ride data collection on real motorcycles.
 
-> 当前状态：设计规格与 v1 实施计划阶段。该仓库不是量产级安全认证产品。
+Starling 是一套面向摩托车真实原型的主动前翼系统。它通过电子控制的车头两侧可变翼片，探索自适应空气动力学对刹车稳定性、前轮载荷、抗 wheelie 能力和路试数据闭环的实际价值。
 
 ## 项目概览
 
