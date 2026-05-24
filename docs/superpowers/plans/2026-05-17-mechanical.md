@@ -119,7 +119,8 @@ RFQ packets for the mechanical subsystem of the Starling Active Aero v1 project.
 - Wing module (NACA 4412 inverted, 120 mm chord × 350 mm span, pivot at 70 % chord)
 - Two sub-frame SKUs: GSX250R-A 2022 (Suzuki) and KTM RC 450 KM400 2026
 - Servo mount + IP67 box accepting DSServo RDS5160 (v1) and Savox SB-2290SG (v2)
-- Reset torsion spring (SS304, 0.5 N·m @ 0° → 1.0 N·m @ 70°)
+- Reset torsion spring (SS304); spring-neutral / fail-safe rest = **0° flat**, preload holds the wing at 0° on power loss
+- **Wing powered travel envelope: −5° … +70° (75° span)** — spring-neutral 0° flat is the fail-safe rest; −5° is powered-only (servo drives below neutral for drag reduction). See OQ-7 note below.
 - Engineering drawings + DFM review + RFQ packets
 
 ## Units & Conventions
@@ -130,6 +131,13 @@ RFQ packets for the mechanical subsystem of the Starling Active Aero v1 project.
 - Coordinate system: pivot axis at origin; +X = chord direction toward leading edge;
   +Y = right (wingtip span); +Z = up. Wing at 0° → cambered (high-pressure) side
   faces -Z (downward) because the airfoil is inverted.
+- **Wing angle convention & travel (OQ-7, 2026-05-24):** powered travel envelope is
+  **−5° … +70° (75° total span)**. **0° (flat) is the spring-neutral / fail-safe rest
+  position** — on power loss the torsion spring returns the wing to 0° flat. Positive
+  angles raise the wing (airbrake, up to +70°); **−5° is powered-only** (servo drives
+  below neutral for drag reduction, DRAG_REDUCE/CORNERING). This propagates master
+  plan IC-4's expanded travel decision; it replaces the prior 0°…+70° envelope. See the
+  `OQ-7 FOLLOW-UP` notes throughout this plan for spring/geometry items needing re-derivation.
 - STEP exports: AP214
 - Drawing standard: ISO-A, 1st-angle, A3 sheet
 - General tolerance: ±0.1 mm
@@ -797,10 +805,13 @@ From spec §3.6 and Appendix B:
 - Wire diameter: 1.6 mm (drives torque rating).
 - Active coils: 8 (double coil = 4 + 4 in series for redundancy; one coil broken → other still applies ~50 % torque).
 - Free angle: 0° (spring legs at 0° relative to each other when unloaded).
+- **Rest position: 0° (flat) — spring-neutral / fail-safe.** On power loss the spring returns the wing to 0° flat (UNCHANGED by OQ-7).
 - Torque at 0° wing angle (preload deflection 20°): 0.5 N·m.
 - Torque at 70° wing angle (total deflection 90°): 1.0 N·m.
 - Spring legs: 30 mm long, straight, tangent ends.
 - Cycle life: ≥ 1 × 10⁶ at full deflection.
+
+> **OQ-7 FOLLOW-UP:** Spring rate, preload, and the torque-vs-angle numbers above were derived for an asymmetric 0°…+70° envelope where 0° was both the spring-neutral rest AND the lower travel limit (the wing only ever moved in the +direction from rest). The new envelope is **−5°…+70° with 0° still the unpowered rest**, so the wing must now be driven **5° below the spring-neutral rest** under power. This requires re-deriving how the mechanism behaves below 0°: (a) does the spring continue to load toward 0° as the servo pulls to −5° (so the servo works against rising spring torque and the wing still springs back to 0° on power loss — preferred for fail-safe), or (b) is a center-detent / dual-leg scheme needed so the spring is neutral exactly at 0° and resists both directions? The preload (currently 20° deflection → 0.5 N·m at the 0° rest) and the resulting servo torque demand at −5° CANNOT be confidently re-derived from this document alone. Mechanical agent must re-derive: spring rate (N·m/°), preload angle, torque at −5° / 0° / +70°, and confirm the 0° fail-safe return still holds with the new below-neutral travel. Numbers left UNCHANGED pending that pass.
 
 Write spec to `cad/hardware/spring_spec.md`:
 
@@ -816,8 +827,10 @@ Write spec to `cad/hardware/spring_spec.md`:
 | Inner coil diameter | 10 mm |
 | Active coils | 8 (double coil, 4+4 redundant) |
 | Free angle | 0° |
-| Preload @ 0° wing (20° spring deflection) | 0.5 N·m |
-| Working @ 70° wing (90° spring deflection) | 1.0 N·m |
+| Rest / fail-safe position | **0° flat** (spring returns wing here on power loss — UNCHANGED by OQ-7) |
+| Preload @ 0° wing (20° spring deflection) | 0.5 N·m — see OQ-7 FOLLOW-UP (Step 10.1) |
+| Working @ 70° wing (90° spring deflection) | 1.0 N·m — see OQ-7 FOLLOW-UP (Step 10.1) |
+| Torque @ −5° wing (powered below neutral) | **TBD — re-derive (OQ-7 FOLLOW-UP, Step 10.1)** |
 | Spring legs | 30 mm straight, tangent ends |
 | Cycle life rating | ≥ 1×10⁶ at full deflection |
 | Direction of wind | RH (right-hand, viewed from servo side) |
@@ -1411,6 +1424,7 @@ git commit -m "mech: v2 PETG split-mold design + carbon-fiber layup recipe"
 - Material: 6061-T6 (Yield 276 MPa, UTS 310 MPa).
 - **Safety factor ≥ 3 against yield** → max equivalent (von Mises) stress ≤ 92 MPa.
 - Mesh: solid tetrahedral, refine to 1 mm at mount holes and the wing-side boss.
+- **OQ-7 note (sub-frame FEA):** the structural worst case stays **+70° at 195 km/h** (max aero load) — the new −5° drag-reduction position is a low-aero-load condition and does **not** govern sub-frame stress, so this FEA load case is **unchanged**. (The −5° change affects the spring and servo-torque budget, not the sub-frame load case — see OQ-7 FOLLOW-UP in Task 10.)
 
 - [ ] **Step 20.2: Run FEA on GSX250R**
 
@@ -2131,8 +2145,13 @@ Match received parts against BOM-Mech.csv. Each part must:
    on the wing root cap (or the shaft retainer hub, depending on final
    geometry).
 4. Bolt spring mount to sub-frame using 2× M4×12 + Loctite 243. **Torque: 2 N·m.**
-5. Verify free rotation: rotate wing manually from 0° to 70° — it should
-   return to 0° automatically when released.
+5. Verify free rotation: rotate wing manually across the **−5° … +70°**
+   envelope — it should **return to 0° (flat) automatically when released**
+   (0° is the spring-neutral / fail-safe rest). The −5° end is powered-only;
+   when hand-checking, confirm the mechanism physically permits reaching −5°
+   (no hard stop at 0°) yet still springs back to 0°.
+
+> **OQ-7 FOLLOW-UP:** The original assembly assumed the wing only travels 0°→+70° and springs back to a 0° rest, which permits (and may even rely on) a hard rest stop at 0°. The new envelope requires the wing to reach **−5° below the 0° rest** under power. Mechanical agent must verify/define: (a) there is NO hard stop at 0° that would block the powered −5° motion, (b) a **lower travel hard-stop at −5°** exists (define its feature/location — spring mount, wing-root cap, or servo-horn limit), (c) the upper hard-stop stays at +70°, and (d) the spring still seats the wing at exactly 0° when unpowered. This geometry was not modeled in the current spring-mount / wing-cap CAD (Tasks 10/11) and CANNOT be added by number-swap alone — it needs a CAD pass.
 
 ### Step 7: Install servo into servo box
 
@@ -2189,10 +2208,13 @@ Match received parts against BOM-Mech.csv. Each part must:
 
 ### Step 12: Encoder calibration
 
-1. With wing physically at 0° geometric (level, parallel to chord plane),
+1. With wing physically at 0° geometric (level, parallel to chord plane —
+   the spring-neutral / fail-safe rest position),
    run firmware's `calibrate_zero` command via App.
 2. AS5600L stores the current reading as the zero reference.
-3. Manually rotate wing to verify reading goes 0° → 70° correctly.
+3. Manually rotate wing to verify the encoder reads correctly across the full
+   **−5° → +70°** range (the AS5600L is signed about the 0° zero reference;
+   −5° reads as a small negative angle, +70° as the upper bound).
 
 ### Step 13: Final inspection checklist
 
@@ -2202,7 +2224,7 @@ Match received parts against BOM-Mech.csv. Each part must:
 - [ ] All M6 bolts torqued and Loctite applied
 - [ ] All M5/M4/M3 bolts torqued and Loctite applied
 - [ ] Bearings seat flush, no rocking
-- [ ] Wing rotates freely 0° → 70° and returns under spring
+- [ ] Wing rotates freely across −5° → +70° and returns to **0° flat** under spring (0° = spring-neutral / fail-safe rest; −5° is powered-only — confirm no hard stop at 0° blocks it; see OQ-7 FOLLOW-UP in Task 10 / Step 6)
 - [ ] Encoder magnet glued in, **air gap within IC-1 range 0.5–3.0 mm** (nominal 1.5 mm; shimmed at AS5600L PCB boss if measured value falls outside)
 - [ ] Servo box lid sealed (EPDM compressed)
 - [ ] Cable gland tightened

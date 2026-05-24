@@ -152,9 +152,13 @@ Status JSON schema (读 status characteristic, ASCII):
 4. 文件头 4KB header，单独的 file-header schema (固件 plan 定义)
 ```
 
-**版本字段**：`starlog_frame_t` 第 99 字节是 `lookup_table_version` —— 改变 schema 时必须 bump 这个字段，Python 分析器靠它选 parser。
+**版本字段（OQ-3 已裁决，2026-05-24）**：`starlog_frame_t` 的 `lookup_table_version` 是 **uint8，位于第 99 字节（byte 99）**；帧长固定 **128 字节**；CRC16 为 **CCITT（init 0xFFFF，poly 0x1021）位于 offset 126**（帧最后 2 字节）。改变 schema 时必须 bump 这个字段，Python 分析器靠它选 parser。**本契约（IC-3）为权威**，**取代** spec §6.2 中那个有缺陷的 struct —— 该 struct 字段实际求和仅 124 字节、把版本放在 offset 96、CRC 落在 offset 122。spec §6.2 已按本 IC-3 修正（见 spec §6.2 AMENDMENT 注），固件 plan 与 Python 分析器均已按 byte-99/uint8 实现。
 
 ### IC-4: 查找表 CSV 格式
+
+> **翼片角度约定 / 物理行程（权威定义，OQ-7 已裁决，2026-05-24）**：v1 翼片物理行程为 **−5° … +70°（总跨度 75°）**。**弹簧中性 / 失效复位（fail-safe）位 = 0°（贴平）**——断电时扭簧把翼片拉回 0° 平贴；**−5° 是仅上电可达**（舵机主动驱动到中性以下，用于 DRAG_REDUCE/CORNERING 减阻）。FAULT 状态仍命令 0°（贴平）。这是跨 plan 的唯一角度真相源；机械 plan（行程/弹簧/限位）、固件 plan（舵机 angle→pulse 映射）、spec §3.1 均以此为准。
+>
+> **OQ-7 备注**：v1 机械行程已由原 0°…+70° **扩展为 −5°…+70°**，以便 IC-4 表中 DRAG_REDUCE（−3/−4/−5）与 CORNERING（−3）等负角度行可被舵机实际到达。**IC-4 表本身不变**（其负值行现在合法且可达）。
 
 **固件 plan + App plan 必须一致**：
 
@@ -304,7 +308,7 @@ Auth 角色：
 **通过判据**:
 - [ ] PCB 收到、SMT 装配完成、上电通过、电压轨稳定
 - [ ] 固件 plan Phase 1 单元测试全部通过 (10/10)
-- [ ] 3D 打印翼片 + 舵机 + 扭簧机构台架装配，全行程 0-70° 可控
+- [ ] 3D 打印翼片 + 舵机 + 扭簧机构台架装配，全行程 −5°…+70° 可控（弹簧中性 0° 贴平；−5° 仅上电可达）
 - [ ] App plan 至少 "Dashboard" 页面跑通（连模拟 ESP32 显示遥测）
 - [ ] 云 plan Firebase project 创建，session 文件可上传
 
