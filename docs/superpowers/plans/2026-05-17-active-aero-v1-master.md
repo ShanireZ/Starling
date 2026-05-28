@@ -160,6 +160,15 @@ Status JSON schema (读 status characteristic, ASCII):
 >
 > **OQ-7 备注**：v1 机械行程已由原 0°…+70° **扩展为 −5°…+70°**，以便 IC-4 表中 DRAG_REDUCE（−3/−4/−5）与 CORNERING（−3）等负角度行可被舵机实际到达。**IC-4 表本身不变**（其负值行现在合法且可达）。
 
+> **状态枚举数（权威定义，OQ-FSM 已裁决，2026-05-28）**：FSM 共有 **10 个状态**（不是 9 个，亦不是表行数）。spec §5.2 标题写作"9 状态优先级仲裁"是文档历史遗漏；§5.2 内部的优先级表本身列出了 **priorities 0–9 共 10 行 / 10 个状态名**。canonical enum（IC-2 `state_current` 字节、IC-3 frame `state_current` 字段、IC-4 表第一列、IC-5 `state_dwell_percent` key 集合的唯一真相源）：
+>
+> ```
+> PARKED, LOW_SPEED, CRUISE, DRAG_REDUCE, BRAKING_LIGHT,
+> BRAKING_HARD, TRAIL_BRAKE, CORNERING, WHEELIE_GUARD, FAULT
+> ```
+>
+> 数值映射严格按上表顺序（PARKED=0, LOW_SPEED=1, ..., FAULT=9）。固件 plan Task 14（已用 `STATE_COUNT == 10` 实现）、cloud plan 的 `CANONICAL_STATES` 常量、app plan 的 9-state 表格编辑器（实为 10-row + 通配/插值）均以此为准。spec §5.2 标题文字 + README "9-state FSM" 措辞为非权威的历史描述，不必逐处修订，但任何新代码、新文档、新测试 fixture **必须用 10 状态**。
+
 **固件 plan + App plan 必须一致**：
 
 ```csv
@@ -204,6 +213,10 @@ FAULT,*,0
 
 **云 plan + App plan + Python 分析器必须一致**：
 
+> **OQ-CLOUD-B 修订（2026-05-28）**：`firmware_releases` 增加 **`bike_profile`** 字段，值为 `"gsx250r" | "rc450" | "universal"`。Cloud Function 的 OTA fanout 按此字段过滤 FCM topic（订阅 topic 名 `firmware-<bike_profile>` + `firmware-universal`），避免 GSX250R 车主收到 RC450-only 固件推送。云 plan Task 14/21 已实现；app plan FCM 订阅逻辑必须与此对齐。
+>
+> **OQ-CLOUD-Admin 修订（2026-05-28）**：原 "写 sessions / firmware 只允许通过 Cloud Function" 规则**仅保留对 `sessions/` 路径有效**。`firmware/<version>.bin` 与 `firmware_releases/{version}` Firestore 文档允许由**持有 `admin` custom claim 的认证用户**直接写入（用于 Web 控制台一键发布），不再强制走 callable function 包装。Storage rules 与 Firestore rules 的具体写法见 cloud plan Task 5/6。`sessions/` 写入路径不变（仍只允许通过 `on_session_upload` 触发后由 Cloud Function 写入 Firestore；客户端只允许往 Storage 的 `sessions/` 路径 *上传*，不能直接写 Firestore session doc）。
+
 ```
 Firestore collections:
   users/{user_id}
@@ -216,7 +229,7 @@ Firestore collections:
   sessions/{session_id}
     user_id, bike_id, start_time, duration_sec,
     distance_km, max_speed_kmh, fault_count,
-    state_dwell_percent: {CRUISE: 75, BRAKING_LIGHT: 12, ...},
+    state_dwell_percent: {CRUISE: 75, BRAKING_LIGHT: 12, ...},  // keys ∈ IC-4 OQ-FSM 10-state enum
     storage_uri: "gs://bucket/sessions/<session_id>.starlog",
     firmware_version, table_version,
     analyzed_at?: timestamp,
@@ -224,6 +237,7 @@ Firestore collections:
 
   firmware_releases/{version}
     version: "0.1.0",
+    bike_profile: "gsx250r" | "rc450" | "universal",   // OQ-CLOUD-B (2026-05-28)
     storage_uri: "gs://bucket/firmware/0.1.0.bin",
     rollout_percentage: 100,
     released_at,
@@ -236,14 +250,17 @@ Cloud Storage paths:
 
 Cloud Functions:
   - on_session_upload(): 解析 starlog → 提取关键指标 → 写 Firestore
-  - on_firmware_publish(): 校验签名 → 通知所有用户
+  - on_firmware_publish(): 校验签名 → FCM fanout 按 bike_profile 过滤 topic
   - get_signed_url(): 生成 session 文件下载临时链接
 ```
 
 Auth 角色：
 - `auth.uid == doc.user_id` 才能读自己的 session
 - 公开 firmware_releases (匿名可读)
-- 写 sessions 只允许通过 Cloud Function (不允许 client 直接写)
+- `sessions/` Firestore 写入：**仅** Cloud Function（客户端只能往 Storage 的 `sessions/<session_id>.starlog` 上传）
+- `firmware/<version>.bin` Storage 写入：Cloud Function **或** `admin` custom claim 认证用户（OQ-CLOUD-Admin，2026-05-28）
+- `firmware_releases/` Firestore 写入：Cloud Function **或** `admin` custom claim 认证用户（同上）
+- `lookup_tables/` Storage 写入：所属车型 owner 或 `admin` claim（细则见 cloud plan）
 
 ### IC-6: 电源预算
 
