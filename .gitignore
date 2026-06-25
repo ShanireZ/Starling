@@ -1,0 +1,20 @@
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+*.swp
+
+# 构建产物 / 临时
+/build/
+/dist/
+*.tmp
+*.log
+
+# 机密
+.env
+.env.*
+!.env.example
