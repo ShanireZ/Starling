@@ -49,10 +49,10 @@
     <span class="leg"><span class="sw" style="background:#1f5fd6"></span>车漆整流罩</span>
     <span class="leg"><span class="sw" style="background:#222833"></span>固定框</span>
     <span class="leg"><span class="sw" style="background:#2a6ae0"></span>联动百叶</span>
-    <span class="leg"><span class="sw" style="background:#0a0c10"></span>内凹腔（借观感）</span>
+    <span class="leg"><span class="sw" style="background:#0a0c10"></span>深风道（内凹腔）</span>
   </div>
   <p class="note">
-    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:低速整片齐平闭合(看着像连续车漆),高速张开露缝、<b>叶片前缘下斜</b>(气流上偏 → 车身微下压力,绝不抬车头)。固定框承受风载,叶片为有弧度的翼型薄片。<br>
+    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:低速整片齐平闭合(看着像连续车漆),高速张开——<b>前缘(下缘)下斜、后缘上抬</b>,迎面风打在叶片上表面被<b>向上导出</b> → 反作用力把车身往下压(微<b>下压力,绝不升力/抬车头</b>)。固定框承受风载,叶片为有弧度的翼型薄片,风道做出<b>明显深度</b>的内凹腔。<br>
     本页为<b>比例 / 落位高仿真稿</b>(贴近 GSX250R 车头比例的体块 + 真实位置的进气口);车漆细节与叶形继续精修为后续步骤。固定框 / 1 自由度 / 不做真涵道等约束见 <code>docs/charter.md</code>。
   </p>
 </div>
@@ -172,9 +172,10 @@
   }
 
   // ============ 电子百叶进气口（固定框 + 联动百叶）============
-  // 调参常量:百叶张合角度(度)。"前缘下斜"由 pivot + 符号控制,owner 可一行微调。
-  var SLAT_CLOSED_DEG = 4;    // 低速:近齐平闭合
-  var SLAT_OPEN_DEG   = 56;   // 高速:张开露缝
+  // 调参常量:百叶张合角度(度)。**负角=前缘(下缘)下斜、后缘上抬**(绕下缘转,上缘后掀进风道)。
+  // 物理:迎面风打在叶片上表面 → 被导向「上方」→ 反作用力压车身向下 = 下压力(绝不升力)。
+  var SLAT_CLOSED_DEG = -6;   // 低速:近齐平(略前缘下斜·叶片 shingle 叠合封口)
+  var SLAT_OPEN_DEG   = -58;  // 高速:张开——前缘下斜/后缘上抬,迎面风上导出
   var SLAT_N = 4;
 
   // 有弧度的翼型薄片(沿弦向起拱,DoubleSide 薄叶)
@@ -193,26 +194,28 @@
   // 单个进气口:局部 +Z = 出风口外法线(朝气流);span 沿局部 X;百叶绕局部 X 联动
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
-    var depth = 0.16;                                  // 内凹腔深度(借观感)
-    // 内凹腔后壁(深色,造 NACA 深腔感)
-    var back = box(mw*0.92, mh*0.92, 0.02, MAT.cavity); back.position.set(0,0,-depth); g.add(back);
-    // 腔体上下内斜壁(漏斗状)
-    var rampT = box(mw*0.92, depth*1.18, 0.015, MAT.cavity); rampT.position.set(0, mh*0.42, -depth*0.5); rampT.rotation.x = 0.7; g.add(rampT);
-    var rampB = box(mw*0.92, depth*1.18, 0.015, MAT.cavity); rampB.position.set(0,-mh*0.42, -depth*0.5); rampB.rotation.x = -0.7; g.add(rampB);
-    // 固定框(四边,承风)
-    var t = 0.045;
-    g.add(at(box(mw+t*2, t, depth*0.7, MAT.frame), 0, mh/2, -depth*0.15));
-    g.add(at(box(mw+t*2, t, depth*0.7, MAT.frame), 0,-mh/2, -depth*0.15));
-    g.add(at(box(t, mh+t*2, depth*0.7, MAT.frame), -mw/2,0, -depth*0.15));
-    g.add(at(box(t, mh+t*2, depth*0.7, MAT.frame),  mw/2,0, -depth*0.15));
-    // 多片联动百叶
-    var chord = (mh / SLAT_N) * 1.32;                  // 弦长 > 行距 → 闭合时重叠齐平
-    var span  = mw * 0.94, camber = 0.045;
+    var depth = 0.42;                                  // ★风道深度(昨议:要深一些·不是薄薄一层)
+    // —— 深风道箱体:后壁 + 上/下/左/右四面内壁(暗色,造真实深腔)——
+    var back = box(mw, mh, 0.02, MAT.cavity); back.position.set(0,0,-depth); g.add(back);
+    g.add(at(box(mw, 0.02, depth, MAT.cavity), 0, mh/2, -depth/2));   // 顶内壁
+    g.add(at(box(mw, 0.02, depth, MAT.cavity), 0,-mh/2, -depth/2));   // 底内壁
+    g.add(at(box(0.02, mh, depth, MAT.cavity), -mw/2,0, -depth/2));   // 左内壁
+    g.add(at(box(0.02, mh, depth, MAT.cavity),  mw/2,0, -depth/2));   // 右内壁
+    // 固定框(四边·承风·在口沿略凸出 z≈0)
+    var t = 0.05, fz = 0.03, fd = 0.10;
+    g.add(at(box(mw+t*2, t, fd, MAT.frame), 0, mh/2, fz));
+    g.add(at(box(mw+t*2, t, fd, MAT.frame), 0,-mh/2, fz));
+    g.add(at(box(t, mh+t*2, fd, MAT.frame), -mw/2,0, fz));
+    g.add(at(box(t, mh+t*2, fd, MAT.frame),  mw/2,0, fz));
+    // 多片联动百叶(坐在口沿平面 z≈0,绕各自下缘转,上缘后掀进风道)
+    var chord = (mh / SLAT_N) * 1.34;                  // 弦长 > 行距 → 闭合时 shingle 叠合封口
+    var span  = mw * 0.94, camber = 0.05;
     var i, y0;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
-      y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布
-      s.position.set(0, y0, 0);
+      y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布(下缘=前缘)
+      s.position.set(0, y0 - chord/2, 0.005);          // 把下缘对到该片应在的高度,叶片略凸出口沿
+      s.userData.chord = chord;                        // 给验证探针用
       var blade = makeSlat(span, chord, camber, MAT.slat);
       s.add(blade);
       g.add(s); slats.push(s);
@@ -229,13 +232,25 @@
     intakes.push(iv);
   }
 
-  // 开度 0..1 → 百叶角度(联动:所有叶片同角)
+  // 开度 0..1 → 百叶角度(联动:所有叶片同角)。负角 → 下缘(前缘)固定在口沿、上缘后掀进风道
   function setOpen(t){
     var deg = SLAT_CLOSED_DEG + (SLAT_OPEN_DEG - SLAT_CLOSED_DEG) * t;
-    var a = deg * Math.PI/180;                          // 绕下缘(前缘)旋转,上缘外掀露缝
+    var a = deg * Math.PI/180;
     var n, i;
     for(n=0;n<intakes.length;n++){ for(i=0;i<intakes[n].slats.length;i++) intakes[n].slats[i].rotation.x = a; }
   }
+
+  // 验证探针(无头环境用):确认开启时叶片「前缘在下/在前、后缘在上/在后」→ 迎面风上导出(下压力)
+  window.__starlingProbe = function(openPct){
+    setOpen(openPct/100); scene.updateMatrixWorld(true);
+    var ig = intakes[0].g, s = intakes[0].slats[1], c = s.userData.chord;
+    var front = ig.worldToLocal(s.localToWorld(new T.Vector3(0,0,0)));   // 下缘=前缘(绕它转·固定)
+    var back  = ig.worldToLocal(s.localToWorld(new T.Vector3(0,c,0)));   // 上缘=后缘(后掀进风道)
+    return { openPct:openPct,
+             front:{y:+front.y.toFixed(3), z:+front.z.toFixed(3)},
+             back: {y:+back.y.toFixed(3),  z:+back.z.toFixed(3)},
+             frontLowerAndForward:(front.z > back.z) && (front.y < back.y) };
+  };
 
   // ---- 轨道拖拽 ----
   var rotY = 0.62, rotX = 0.16, dom = renderer.domElement, down=false, px=0, py=0;
