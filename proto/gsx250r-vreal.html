@@ -36,7 +36,7 @@
   <div class="row">
     <label for="speed">车速 / 开度</label>
     <input id="speed" type="range" min="0" max="100" value="0" step="1">
-    <span id="out">闭合（齐平）· 0 km/h</span>
+    <span id="out">闭合（竖直）· 0 km/h</span>
   </div>
   <div class="btns">
     <button id="auto">▶ 自动播放</button>
@@ -52,7 +52,7 @@
     <span class="leg"><span class="sw" style="background:#0a0c10"></span>深风道（内凹腔）</span>
   </div>
   <p class="note">
-    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:低速整片齐平闭合(看着像连续车漆),高速张开——<b>前缘(下缘)下斜、后缘上抬</b>,迎面风打在叶片上表面被<b>向上导出</b> → 反作用力把车身往下压(微<b>下压力,绝不升力/抬车头</b>)。固定框承受风载,叶片为有弧度的翼型薄片,风道做出<b>明显深度</b>的内凹腔。<br>
+    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:初始静止时叶片<b>竖直</b>层叠封口,随车速张开——<b>前缘(下缘)下斜(至约 45°)、后缘上抬</b>,迎面风打在叶片上表面被<b>向上导出</b> → 反作用力把车身往下压(微<b>下压力,绝不升力/抬车头</b>)。固定框承受风载,叶片为有弧度的翼型薄片,风道做出<b>明显深度</b>的内凹腔。<br>
     本页为<b>比例 / 落位高仿真稿</b>(贴近 GSX250R 车头比例的体块 + 真实位置的进气口);车漆细节与叶形继续精修为后续步骤。固定框 / 1 自由度 / 不做真涵道等约束见 <code>docs/charter.md</code>。
   </p>
 </div>
@@ -174,8 +174,8 @@
   // ============ 电子百叶进气口（固定框 + 联动百叶）============
   // 调参常量:百叶张合角度(度)。**负角=前缘(下缘)下斜、后缘上抬**(绕下缘转,上缘后掀进风道)。
   // 物理:迎面风打在叶片上表面 → 被导向「上方」→ 反作用力压车身向下 = 下压力(绝不升力)。
-  var SLAT_CLOSED_DEG = -6;   // 低速:近齐平(略前缘下斜·叶片 shingle 叠合封口)
-  var SLAT_OPEN_DEG   = -58;  // 高速:张开——前缘下斜/后缘上抬,迎面风上导出
+  var SLAT_CLOSED_DEG = 0;    // 初始(0 km/h):叶片**竖直**(层叠封口)
+  var SLAT_OPEN_DEG   = -45;  // 张开到顶:前缘(下缘)下斜 **45°**、后缘上抬 → 迎面风上导出(下压力)
   var SLAT_N = 4;
 
   // 有弧度的翼型薄片(沿弦向起拱,DoubleSide 薄叶)
@@ -208,13 +208,13 @@
     g.add(at(box(t, mh+t*2, fd, MAT.frame), -mw/2,0, fz));
     g.add(at(box(t, mh+t*2, fd, MAT.frame),  mw/2,0, fz));
     // 多片联动百叶(坐在口沿平面 z≈0,绕各自下缘转,上缘后掀进风道)
-    var chord = (mh / SLAT_N) * 1.34;                  // 弦长 > 行距 → 闭合时 shingle 叠合封口
+    var chord = (mh / SLAT_N) * 1.12;                  // 略重叠 → 竖直闭合时层叠不透光
     var span  = mw * 0.94, camber = 0.05;
     var i, y0;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
-      y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布(下缘=前缘)
-      s.position.set(0, y0 - chord/2, 0.005);          // 把下缘对到该片应在的高度,叶片略凸出口沿
+      y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布(下缘=前缘·绕它转)
+      s.position.set(0, y0 - chord/2, 0.004 + i*0.004);// 下缘对到该片高度 + 微 z 错层(防竖直闭合 z-fighting)
       s.userData.chord = chord;                        // 给验证探针用
       var blade = makeSlat(span, chord, camber, MAT.slat);
       s.add(blade);
@@ -261,7 +261,7 @@
 
   // ---- 滑杆 / 自动 / 视角 ----
   var speed = document.getElementById('speed'), out = document.getElementById('out');
-  function txt(v){ return (v<=2 ? '闭合（齐平）' : (v>=98 ? '全开' : '开度 '+Math.round(v)+'%')) + ' · ' + Math.round(v) + ' km/h'; }
+  function txt(v){ return (v<=2 ? '闭合（竖直）' : (v>=98 ? '全开（-45°）' : '开度 '+Math.round(v)+'%')) + ' · ' + Math.round(v) + ' km/h'; }
   var cur = 0;
   function applyV(v){ cur=v; setOpen(v/100); out.textContent = txt(v); speed.value = Math.round(v); }
   var auto=false, dir=1, ab=document.getElementById('auto');
