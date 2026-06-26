@@ -107,73 +107,83 @@
   var pivot = new T.Group(); scene.add(pivot);
 
   // 地面(柔和反差,衬出车体)
-  var ground = new T.Mesh(new T.CircleGeometry(6.2, 48), new T.MeshStandardMaterial({color:0x10151e, roughness:1.0, metalness:0.0}));
+  var ground = new T.Mesh(new T.CircleGeometry(3.4, 48), new T.MeshStandardMaterial({color:0x10151e, roughness:1.0, metalness:0.0}));
   ground.rotation.x = -Math.PI/2; ground.position.y = 0; pivot.add(ground);
-  var grid = new T.GridHelper(11, 22, 0x46506a, 0x2b3344);
-  grid.material.transparent = true; grid.material.opacity = 0.35; grid.position.y = 0.001; pivot.add(grid);
+  var grid = new T.GridHelper(6, 24, 0x46506a, 0x2b3344);   // 6m 网格,每格 0.25m
+  grid.material.transparent = true; grid.material.opacity = 0.30; grid.position.y = 0.001; pivot.add(grid);
 
   function box(w,h,d,m){ return new T.Mesh(new T.BoxGeometry(w,h,d), m); }
   function cyl(rt,rb,h,seg,m){ return new T.Mesh(new T.CylinderGeometry(rt,rb,h,seg), m); }
   // three.js 的 Object3D.position 是只读属性,不能用 Object.assign 赋值 → 统一用此助手设位
   function at(mesh,x,y,z){ mesh.position.set(x,y,z); return mesh; }
 
-  // ============ 车头前部组件（+Z 朝前,朝相机）============
+  // ============ 整车按真实尺寸建模（单位 m;数据见 docs/gsx250r-reference.md）============
+  var SPEC = { wheelbase:1.430, frontR:0.304, rearR:0.314, frontW:0.110, rearW:0.140, seatH:0.790, height:1.110, length:2.085 };
+  var FW = new T.Vector3(0, SPEC.frontR,  SPEC.wheelbase/2);   // 前轮中心
+  var RW = new T.Vector3(0, SPEC.rearR,  -SPEC.wheelbase/2);   // 后轮中心
   var bike = new T.Group(); pivot.add(bike);
+  var k, sx;
 
-  // 前轮
-  var wheelC = new T.Vector3(0, 0.5, 1.98);
-  var tire = cyl(0.5,0.5,0.20,28, MAT.tire); tire.rotation.z = Math.PI/2; tire.position.copy(wheelC); bike.add(tire);
-  var rimM = cyl(0.34,0.34,0.21,24, MAT.rim); rimM.rotation.z = Math.PI/2; rimM.position.copy(wheelC); bike.add(rimM);
-  var hub = cyl(0.09,0.09,0.24,16, MAT.fork); hub.rotation.z = Math.PI/2; hub.position.copy(wheelC); bike.add(hub);
-  var disc = cyl(0.27,0.27,0.02,24, MAT.disc); disc.rotation.z = Math.PI/2; disc.position.set(wheelC.x+0.12, wheelC.y, wheelC.z); bike.add(disc);
-  // 简易轮辐
-  var sp, k; for(k=0;k<5;k++){ sp = box(0.04,0.62,0.04, MAT.rim); sp.position.copy(wheelC); sp.rotation.x = k*Math.PI/5; bike.add(sp); }
-
-  // 前挡泥板(车漆,弧面包住轮上前缘)——半环 torus 绕轮轴(X)
-  var fender = new T.Mesh(new T.TorusGeometry(0.57, 0.055, 10, 28, Math.PI*1.05), MAT.body);
-  fender.rotation.y = Math.PI/2;          // 环面绕 X 轴
-  fender.rotation.z = -0.35;              // 转到覆盖前-上方
-  fender.position.copy(wheelC); bike.add(fender);
-
-  // 前叉(两根,带 ~26° 后倾)
-  var fk, sx; for(k=0;k<2;k++){ sx = (k===0?-1:1)*0.17;
-    fk = cyl(0.045,0.05,0.92,14, MAT.fork);
-    fk.position.set(sx, 1.0, 1.78);
-    fk.rotation.x = 0.46;                 // 后倾
-    bike.add(fk);
+  // 车轮(十辐铸铝 + 刹车碟),复用于前/后
+  function makeWheel(R, w){
+    var g = new T.Group(), j;
+    var tire = cyl(R,R,w,32,MAT.tire); tire.rotation.z=Math.PI/2; g.add(tire);
+    var rim  = cyl(R*0.56,R*0.56,w*0.96,28,MAT.rim); rim.rotation.z=Math.PI/2; g.add(rim);
+    var axle = cyl(0.045,0.045,w+0.03,14,MAT.fork); axle.rotation.z=Math.PI/2; g.add(axle);
+    for(j=0;j<5;j++){ var s=box(0.018,R*1.05,0.028,MAT.rim); s.rotation.x=j*Math.PI/5; g.add(s); }
+    var disc = cyl(R*0.6,R*0.6,0.012,28,MAT.disc); disc.rotation.z=Math.PI/2; disc.position.x=w/2+0.02; g.add(disc);
+    return g;
   }
-  // 三角台/上联板
-  bike.add(at(box(0.46,0.10,0.22, MAT.fork), 0,1.42,1.55));
+  var frontWheel = makeWheel(SPEC.frontR, SPEC.frontW); frontWheel.position.copy(FW); bike.add(frontWheel);
+  var rearWheel  = makeWheel(SPEC.rearR,  SPEC.rearW);  rearWheel.position.copy(RW);  bike.add(rearWheel);
 
-  // 下颚 / 嘴(beak)
-  var chin = box(0.60,0.34,0.46, MAT.body); chin.position.set(0,1.04,1.66); chin.rotation.x = -0.12; bike.add(chin);
-
-  // 上整流罩(头灯壳体)
-  var cowl = box(0.74,0.50,0.52, MAT.body); cowl.position.set(0,1.46,1.50); bike.add(cowl);
-  // 整流罩顶过渡到风挡基座
-  var crown = box(0.62,0.16,0.40, MAT.body); crown.position.set(0,1.74,1.40); crown.rotation.x = -0.5; bike.add(crown);
-
-  // 双竖排头灯(GSX250R 标志性) —— 两枚透镜叠放于前脸
-  var lensTop = cyl(0.115,0.115,0.06,20, MAT.head); lensTop.rotation.x = Math.PI/2; lensTop.position.set(0,1.56,1.785); bike.add(lensTop);
-  var lensBot = cyl(0.115,0.115,0.06,20, MAT.head); lensBot.rotation.x = Math.PI/2; lensBot.position.set(0,1.34,1.79);  bike.add(lensBot);
-  // 灯罩黑底
-  bike.add(at(box(0.34,0.52,0.05, MAT.frame), 0,1.45,1.76));
-
-  // 风挡(熏黑半透,后倾)
-  var screen = box(0.50,0.46,0.03, MAT.screen); screen.position.set(0,1.90,1.30); screen.rotation.x = -0.62; bike.add(screen);
-
-  // 后视镜(小,提升辨识度)
-  for(k=0;k<2;k++){ sx=(k===0?-1:1);
-    var stalk = cyl(0.022,0.022,0.22,8, MAT.mirror); stalk.position.set(sx*0.34,1.92,1.18); stalk.rotation.z = sx*0.5; bike.add(stalk);
-    var mface = box(0.20,0.11,0.04, MAT.mirror); mface.position.set(sx*0.46,2.02,1.16); mface.rotation.y = sx*0.3; bike.add(mface);
+  // 前叉(两管 rake~25°)+ 转向头三角台
+  var STEER = new T.Vector3(0, 0.95, 0.62);
+  for(k=0;k<2;k++){ sx=(k===0?-1:1)*0.085;
+    var fk = cyl(0.022,0.026,0.74,12,MAT.fork);
+    fk.position.set(sx,(FW.y+STEER.y)/2+0.02,(FW.z+STEER.z)/2); fk.rotation.x=0.44; bike.add(fk);
   }
+  bike.add(at(box(0.16,0.07,0.10,MAT.fork), 0,STEER.y,STEER.z));
 
-  // 侧整流罩"脸颊"(承载进气口,向前外侧收)
+  // 后摇臂 + 中置避震
+  for(k=0;k<2;k++){ sx=(k===0?-1:1)*0.10;
+    var sa = box(0.05,0.055,0.62,MAT.fork); sa.position.set(sx,(RW.y+0.34)/2,RW.z/2); sa.rotation.x=-0.18; bike.add(sa);
+  }
+  bike.add(at(cyl(0.028,0.028,0.26,10,MAT.mirror), 0,0.50,-0.28));
+
+  // 引擎块 + 排气
+  bike.add(at(box(0.34,0.34,0.46,MAT.fork), 0,0.46,0.06));
+  bike.add(at(box(0.30,0.22,0.30,MAT.frame), 0,0.54,0.10));
+  var ex = cyl(0.032,0.04,0.5,12,MAT.disc); ex.position.set(0.10,0.30,0.30); ex.rotation.x=1.2; bike.add(ex);
+  bike.add(at(cyl(0.055,0.065,0.34,16,MAT.disc), 0.19,0.34,-0.42));   // 消音器(右)
+
+  // 油箱 / 座 / 尾段
+  var tank = box(0.34,0.20,0.46,MAT.body); tank.position.set(0,0.84,0.28); tank.rotation.x=0.06; bike.add(tank);
+  bike.add(at(box(0.28,0.06,0.40,MAT.frame), 0,0.80,-0.16));          // 座垫
+  var tail = box(0.22,0.16,0.40,MAT.body); tail.position.set(0,0.86,-0.54); tail.rotation.x=-0.22; bike.add(tail);
+  bike.add(at(box(0.15,0.05,0.10,MAT.head), 0,0.90,-0.76));           // 尾灯
+
+  // —— 全包整流罩 ——
+  bike.add(at(box(0.30,0.06,0.50,MAT.body), 0,0.20,0.20));            // 腹底
   for(k=0;k<2;k++){ sx=(k===0?-1:1);
-    var cheek = box(0.07,0.52,0.50, MAT.body);
-    cheek.position.set(sx*0.40,1.18,1.52);
-    cheek.rotation.y = sx*0.34;           // toe-out
-    bike.add(cheek);
+    var belly = box(0.05,0.32,0.60,MAT.body); belly.position.set(sx*0.16,0.34,0.18); belly.rotation.y=sx*0.05; bike.add(belly);
+    var side  = box(0.06,0.44,0.66,MAT.body); side.position.set(sx*0.23,0.68,0.30); side.rotation.y=sx*0.12; bike.add(side);
+  }
+  var cowl = box(0.40,0.34,0.40,MAT.body); cowl.position.set(0,0.95,0.66); cowl.rotation.x=0.10; bike.add(cowl);
+  bike.add(at(box(0.30,0.12,0.26,MAT.body), 0,1.12,0.55));            // 罩眉 / 风挡基座
+  var lt = cyl(0.07,0.07,0.05,18,MAT.head); lt.rotation.x=Math.PI/2; lt.position.set(0,1.00,0.865); bike.add(lt);  // 上头灯
+  var lb = cyl(0.07,0.07,0.05,18,MAT.head); lb.rotation.x=Math.PI/2; lb.position.set(0,0.86,0.875); bike.add(lb);  // 下头灯
+  bike.add(at(box(0.20,0.30,0.04,MAT.frame), 0,0.93,0.85));           // 灯罩黑底
+  var screen = box(0.30,0.26,0.02,MAT.screen); screen.position.set(0,1.18,0.60); screen.rotation.x=-0.55; bike.add(screen);
+
+  // 前 / 后挡泥板 + 后视镜 + 把手
+  var fender = new T.Mesh(new T.TorusGeometry(SPEC.frontR+0.045,0.03,8,24,Math.PI*0.7), MAT.body);
+  fender.rotation.y=Math.PI/2; fender.rotation.z=-0.5; fender.position.set(FW.x,FW.y,FW.z+0.02); bike.add(fender);
+  bike.add(at(box(0.13,0.04,0.22,MAT.frame), 0,RW.y+0.28,RW.z-0.02));
+  for(k=0;k<2;k++){ sx=(k===0?-1:1);
+    var ms=cyl(0.012,0.012,0.16,8,MAT.mirror); ms.position.set(sx*0.18,1.06,0.55); ms.rotation.z=sx*0.5; bike.add(ms);
+    bike.add(at(box(0.13,0.07,0.03,MAT.mirror), sx*0.27,1.12,0.53));
+    var bar=cyl(0.013,0.013,0.16,8,MAT.fork); bar.position.set(sx*0.16,0.99,0.50); bar.rotation.z=Math.PI/2; bike.add(bar);
   }
 
   // ============ 电子百叶进气口（固定框 + 联动百叶）============
@@ -199,7 +209,7 @@
   // 单个进气口:局部 +Z = 出风口外法线(朝气流);span 沿局部 X;百叶绕局部 X 联动
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
-    var depth = 0.42;                                  // ★风道深度(昨议:要深一些·不是薄薄一层)
+    var depth = mh * 0.7;                              // ★风道深度随口径(真实比例的深内凹腔)
     // —— 深风道箱体:后壁 + 上/下/左/右四面内壁(暗色,造真实深腔)——
     var back = box(mw, mh, 0.02, MAT.cavity); back.position.set(0,0,-depth); g.add(back);
     g.add(at(box(mw, 0.02, depth, MAT.cavity), 0, mh/2, -depth/2));   // 顶内壁
@@ -232,9 +242,9 @@
   var intakeRig = new T.Group(); bike.add(intakeRig);  // 进气口独立成组(换真车模型后整体重定位)
   var intakes = [];
   for(k=0;k<2;k++){ sx=(k===0?-1:1);
-    var iv = makeIntake(0.42, 0.62);                   // 加大,便于看清动作
-    iv.g.position.set(sx*0.52, 1.20, 1.56);
-    iv.g.rotation.y = sx*0.40;                         // 朝前外侧
+    var iv = makeIntake(0.14, 0.22);                   // 真实比例口径(上侧整流罩鳃口)
+    iv.g.position.set(sx*0.27, 0.92, 0.46);
+    iv.g.rotation.y = sx*0.50;                         // 朝前外侧(贴侧整流罩)
     intakeRig.add(iv.g);
     intakes.push(iv);
   }
@@ -264,18 +274,18 @@
              deflectsUp:(n.y > 0.01) };                                  // 迎风外表面朝上 → 风上导
   };
 
-  // ---- 相机(可缩放) + 轨道拖拽 ----
-  var rotY = -0.42, rotX = 0.10;                       // 默认朝向 = 右进气口特写
-  var camDist = 4.3, camY = 1.42, tgtX = -0.16, tgtY = 1.18, tgtZ = 1.5;
+  // ---- 相机(可缩放·真实 m 尺度) + 轨道拖拽 ----
+  var rotY = 0.62, rotX = 0.08;                        // 默认 = 整车三分斜视
+  var camDist = 3.4, camY = 1.0, tgtX = 0, tgtY = 0.6, tgtZ = 0;
   var dom = renderer.domElement, down=false, px=0, py=0;
   dom.addEventListener('pointerdown', function(e){ down=true; px=e.clientX; py=e.clientY; if(dom.setPointerCapture) dom.setPointerCapture(e.pointerId); });
   dom.addEventListener('pointermove', function(e){ if(!down) return; rotY += (e.clientX-px)*0.008; rotX += (e.clientY-py)*0.008; rotX = Math.max(-0.25, Math.min(1.35, rotX)); px=e.clientX; py=e.clientY; });
   dom.addEventListener('pointerup', function(){ down=false; });
   dom.addEventListener('pointerleave', function(){ down=false; });
-  dom.addEventListener('wheel', function(e){ e.preventDefault(); camDist = Math.max(2.2, Math.min(12, camDist + (e.deltaY>0?0.6:-0.6))); }, {passive:false});
+  dom.addEventListener('wheel', function(e){ e.preventDefault(); camDist = Math.max(0.8, Math.min(7, camDist + (e.deltaY>0?0.25:-0.25))); }, {passive:false});
 
-  function overview(){ camDist=8.2; camY=2.55; tgtX=0; tgtY=1.12; tgtZ=1.1; }
-  function focusIntake(){ rotY=-0.42; rotX=0.10; camDist=4.3; camY=1.42; tgtX=-0.16; tgtY=1.18; tgtZ=1.5; }
+  function overview(){ camDist=3.4; camY=1.0; tgtX=0; tgtY=0.6; tgtZ=0; }
+  function focusIntake(){ rotY=-0.5; rotX=0.05; camDist=1.15; camY=0.96; tgtX=0.02; tgtY=0.91; tgtZ=0.52; }
 
   // ---- 滑杆 / 自动 / 视角 ----
   var speed = document.getElementById('speed'), out = document.getElementById('out');
@@ -298,7 +308,7 @@
   function setPlaceholder(v){ for(var i=0;i<bike.children.length;i++){ if(bike.children[i]!==intakeRig) bike.children[i].visible=v; } }
   function fitModel(o){
     var bb=new T.Box3().setFromObject(o), sz=bb.getSize(new T.Vector3());
-    o.scale.multiplyScalar(2.4/Math.max(sz.x,sz.y,sz.z));            // 缩放到约 2.4 单位
+    o.scale.multiplyScalar(SPEC.length/Math.max(sz.x,sz.y,sz.z));    // 缩放到真车总长 ~2.085m
     bb.setFromObject(o); sz=bb.getSize(new T.Vector3()); var c=bb.getCenter(new T.Vector3());
     o.position.x-=c.x; o.position.z-=c.z; o.position.y+=(sz.y/2-c.y); // 居中并落到地面
   }
@@ -311,6 +321,18 @@
 
   // 调试:右进气口在当前特写下的屏幕归一化坐标(用于对中)
   window.__starlingNDC = function(){ var p=new T.Vector3(); pivot.updateMatrixWorld(true); intakes[1].g.getWorldPosition(p); cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true); p.project(cam); return {x:+p.x.toFixed(2), y:+p.y.toFixed(2)}; };
+
+  // 调试:整车包围盒 + 当前视角下整车在屏幕的投影范围(对框用,稳定后可删)
+  window.__starlingInfo = function(){
+    pivot.updateMatrixWorld(true);
+    var bb=new T.Box3().setFromObject(bike), mn=bb.min, mx=bb.max;
+    cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true);
+    var pts=[], xs=[], ys=[], i,j,l;
+    for(i=0;i<2;i++)for(j=0;j<2;j++)for(l=0;l<2;l++){ var p=new T.Vector3(i?mx.x:mn.x, j?mx.y:mn.y, l?mx.z:mn.z).project(cam); xs.push(p.x); ys.push(p.y); }
+    return { bbox:{ x:[+mn.x.toFixed(2),+mx.x.toFixed(2)], y:[+mn.y.toFixed(2),+mx.y.toFixed(2)], z:[+mn.z.toFixed(2),+mx.z.toFixed(2)] },
+             sizeM:{ L:+(mx.z-mn.z).toFixed(2), H:+(mx.y-mn.y).toFixed(2), W:+(mx.x-mn.x).toFixed(2) },
+             screenNDC:{ x:[+Math.min.apply(0,xs).toFixed(2),+Math.max.apply(0,xs).toFixed(2)], y:[+Math.min.apply(0,ys).toFixed(2),+Math.max.apply(0,ys).toFixed(2)] } };
+  };
 
   window.addEventListener('resize', function(){ W=stage.clientWidth||920; renderer.setSize(W,H); cam.aspect=W/H; cam.updateProjectionMatrix(); });
 
