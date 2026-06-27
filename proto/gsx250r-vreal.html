@@ -57,7 +57,8 @@
   <p class="note">
     <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:初始静止时叶片<b>竖直贴面</b>齐平封口;随车速张开,<b>全速时转到水平(顺气流 / 羽化)= 低阻通风口</b>(高速主打<b>低阻</b>,不追求下压力)。中途约 -45° 会短暂偏流上挑(过渡态)。固定框承受风载。<br>
     <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):气流绕过车体;百叶中途偏流时流线被<b>上挑</b>(暖色),<b>全速放平后流线顺流穿过</b>(低阻)——仅作<b>机制演示</b>,非性能验证。<br>
-    本页为<b>整车按真实尺寸建模</b>(长 2.05 / 高 1.11 / 轴距 1.43 m,前后 17" 轮,实测对齐 GSX250R 规格;数据见 <code>docs/gsx250r-reference.md</code>)。曲面 / 车漆为<b>风格化 CG(非照片级)</b>;需照片级真模时把 <b>.glb 拖进画面</b>。约束见 <code>docs/charter.md</code>。
+    <b>车身 = 真实 3D 模型</b>(默认加载 <code>res/sports_bike</code>;鳃口已落到前整流罩侧面)。换车型可拖入别的 <b>.glb/.gltf</b> 或 <code>?model=URL</code>。GSX250R 真实尺寸底本见 <code>docs/gsx250r-reference.md</code>;约束见 <code>docs/charter.md</code>。<br>
+    <span style="opacity:.7">车体模型:"Sports Bike" by <b>Futurealiti</b> — <a href="https://sketchfab.com/3d-models/sports-bike-a80259b859c842d5824c25c61e0fc421" style="color:#7fb3ff">Sketchfab</a>,授权 <b>CC-BY-4.0</b>(仅作占位演示·非 Suzuki 官方车型)。</span>
   </p>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -308,7 +309,14 @@
     bb.setFromObject(o); sz=bb.getSize(new T.Vector3()); var c=bb.getCenter(new T.Vector3());
     o.position.x-=c.x; o.position.z-=c.z; o.position.y+=(sz.y/2-c.y); // 居中并落到地面
   }
-  function showModel(s3){ while(modelGroup.children.length) modelGroup.remove(modelGroup.children[0]); modelGroup.add(s3); fitModel(s3); setPlaceholder(false); status('已加载真车模型(占位体块已隐藏;进气口需按真车再定位)'); }
+  // 鳃口在真车(sports_bike)整流罩上的落位(浏览器实测调出)
+  var GILL_ON_BIKE = { iy:0.80, iz:0.78, scale:0.48, spread:0.19, ry:0.45 };
+  function placeGillsOnBike(){ var g=GILL_ON_BIKE;
+    intakes[0].g.position.set(-g.spread,0,0); intakes[1].g.position.set(g.spread,0,0);
+    intakes[0].g.rotation.y=g.ry; intakes[1].g.rotation.y=-g.ry;
+    intakeRig.position.set(0,g.iy,g.iz); intakeRig.scale.setScalar(g.scale);
+  }
+  function showModel(s3){ while(modelGroup.children.length) modelGroup.remove(modelGroup.children[0]); modelGroup.add(s3); fitModel(s3); setPlaceholder(false); placeGillsOnBike(); status('已加载真车模型 Sports Bike(CC-BY·Futurealiti)·鳃口已落位'); }
   if(loader){
     stage.addEventListener('dragover', function(e){ e.preventDefault(); });
     stage.addEventListener('drop', function(e){ e.preventDefault(); var f=e.dataTransfer&&e.dataTransfer.files[0]; if(!f) return; status('加载中…'); var r=new FileReader(); r.onload=function(){ try{ loader.parse(r.result,'',function(g){ showModel(g.scene); }, function(){ status('解析失败:不是有效 .glb/.gltf'); }); }catch(err){ status('解析出错'); } }; r.readAsArrayBuffer(f); });
@@ -320,8 +328,9 @@
     intakes[0].g.position.set(-spread, 0, 0); intakes[1].g.position.set(spread, 0, 0);
     if(ry!==undefined){ intakes[0].g.rotation.y = ry; intakes[1].g.rotation.y = -ry; }
     intakeRig.position.set(0, iy, iz); intakeRig.scale.setScalar(scale);
-    return {iy:iy, iz:iz, scale:scale, spread:spread};
+    return {iy:iy, iz:iz, scale:scale, spread:spread, ry:ry};
   };
+  window.__modelBox = function(){ var b=new T.Box3().setFromObject(modelGroup); var s=b.getSize(new T.Vector3()); return {min:[+b.min.x.toFixed(2),+b.min.y.toFixed(2),+b.min.z.toFixed(2)], max:[+b.max.x.toFixed(2),+b.max.y.toFixed(2),+b.max.z.toFixed(2)], size:[+s.x.toFixed(2),+s.y.toFixed(2),+s.z.toFixed(2)]}; };
 
   // 调试:右进气口在当前特写下的屏幕归一化坐标(用于对中)
   window.__starlingNDC = function(){ var p=new T.Vector3(); pivot.rotation.set(rotX,rotY,0); pivot.updateMatrixWorld(true); intakes[1].g.getWorldPosition(p); cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true); cam.matrixWorldInverse.copy(cam.matrixWorld).invert(); p.project(cam); return {x:+p.x.toFixed(2), y:+p.y.toFixed(2)}; };

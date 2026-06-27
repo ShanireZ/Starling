@@ -6,9 +6,12 @@
 
 - 立项文档:[docs/charter.md](docs/charter.md)
 - 项目约定与状态:[AGENTS.md](AGENTS.md)
-- 3D 机构示意(轻量方块版):[proto/wing-3d.html](proto/wing-3d.html)
-- 3D 高仿真稿(GSX250R 车头 + 百叶落位,v-real 第一稿):[proto/gsx250r-vreal.html](proto/gsx250r-vreal.html)
+- **3D 演示(真实车身 + 鳃口落位):[proto/gsx250r-vreal.html](proto/gsx250r-vreal.html)** — 默认加载真实运动摩托模型,鳃口落在前整流罩侧面;滑杆模拟车速 → 百叶开度;可拖入别的 `.glb/.gltf` 换车型。
+- 3D 机构示意(轻量方块版,旧):[proto/wing-3d.html](proto/wing-3d.html)
 
-> 网页模型为纯静态单文件(three.js CDN),浏览器直接打开即可;滑杆模拟车速 → 百叶开度。
+> 网页为单文件 three.js;真实车体模型需经本地静态服务器加载(见 `res/`)。
+
+### 第三方素材署名
+- 车体模型 **"Sports Bike" by Futurealiti**(https://sketchfab.com/3d-models/sports-bike-a80259b859c842d5824c25c61e0fc421),授权 **CC-BY-4.0**。仅作占位 / 演示用的运动摩托车体,**非 Suzuki GSX250R 官方车型**;后续可替换。
 
 > v2 重启。上一版因"为微小性能堆五学科复杂度"而流产;本版以 **收益封顶 + 第一周可观察 + 单人可调 + 禁战线蔓延** 为铁律。
