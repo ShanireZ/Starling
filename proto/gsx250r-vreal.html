@@ -312,8 +312,16 @@
   if(loader){
     stage.addEventListener('dragover', function(e){ e.preventDefault(); });
     stage.addEventListener('drop', function(e){ e.preventDefault(); var f=e.dataTransfer&&e.dataTransfer.files[0]; if(!f) return; status('加载中…'); var r=new FileReader(); r.onload=function(){ try{ loader.parse(r.result,'',function(g){ showModel(g.scene); }, function(){ status('解析失败:不是有效 .glb/.gltf'); }); }catch(err){ status('解析出错'); } }; r.readAsArrayBuffer(f); });
-    var mu=new URLSearchParams(location.search).get('model'); if(mu){ status('加载中…'); loader.load(mu, function(g){ showModel(g.scene); }, null, function(){ status('加载失败:'+mu); }); }
+    var mu=new URLSearchParams(location.search).get('model') || '/res/sports_bike/scene.gltf'; status('加载中…'); loader.load(mu, function(g){ showModel(g.scene); }, null, function(){ status('加载失败:'+mu); });
   } else { status('GLTFLoader 未就绪(需联网)'); }
+
+  // 进气口落位助手(换真车后用:整体高度/前后/大小/左右间距)
+  window.__placeGills = function(iy, iz, scale, spread, ry){
+    intakes[0].g.position.set(-spread, 0, 0); intakes[1].g.position.set(spread, 0, 0);
+    if(ry!==undefined){ intakes[0].g.rotation.y = ry; intakes[1].g.rotation.y = -ry; }
+    intakeRig.position.set(0, iy, iz); intakeRig.scale.setScalar(scale);
+    return {iy:iy, iz:iz, scale:scale, spread:spread};
+  };
 
   // 调试:右进气口在当前特写下的屏幕归一化坐标(用于对中)
   window.__starlingNDC = function(){ var p=new T.Vector3(); pivot.rotation.set(rotX,rotY,0); pivot.updateMatrixWorld(true); intakes[1].g.getWorldPosition(p); cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true); cam.matrixWorldInverse.copy(cam.matrixWorld).invert(); p.project(cam); return {x:+p.x.toFixed(2), y:+p.y.toFixed(2)}; };
