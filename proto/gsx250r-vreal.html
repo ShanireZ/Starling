@@ -118,6 +118,15 @@
   function cyl(rt,rb,h,seg,m){ return new T.Mesh(new T.CylinderGeometry(rt,rb,h,seg), m); }
   // three.js 的 Object3D.position 是只读属性,不能用 Object.assign 赋值 → 统一用此助手设位
   function at(mesh,x,y,z){ mesh.position.set(x,y,z); return mesh; }
+  // 梯形框(上宽下窄·挤出成边框环):外梯形 + 内梯形挖洞 → ExtrudeGeometry
+  function trapRing(wTop,wBot,h,t,depth,m){
+    var o=new T.Shape();
+    o.moveTo(-wTop/2-t, h/2+t); o.lineTo(wTop/2+t, h/2+t); o.lineTo(wBot/2+t, -h/2-t); o.lineTo(-wBot/2-t, -h/2-t); o.closePath();
+    var hole=new T.Path();
+    hole.moveTo(-wTop/2, h/2); hole.lineTo(wTop/2, h/2); hole.lineTo(wBot/2, -h/2); hole.lineTo(-wBot/2, -h/2); hole.closePath();
+    o.holes.push(hole);
+    return new T.Mesh(new T.ExtrudeGeometry(o,{depth:depth, bevelEnabled:false, steps:1}), m);
+  }
 
   // ============ 整车按真实尺寸建模（单位 m;数据见 docs/gsx250r-reference.md）============
   var SPEC = { wheelbase:1.430, frontR:0.304, rearR:0.314, frontW:0.110, rearW:0.140, seatH:0.790, height:1.110, length:2.085 };
@@ -218,24 +227,20 @@
     g.add(at(box(mw, 0.02, depth, MAT.cavity), 0,-mh/2, -depth/2));   // 底内壁
     g.add(at(box(0.02, mh, depth, MAT.cavity), -mw/2,0, -depth/2));   // 左内壁
     g.add(at(box(0.02, mh, depth, MAT.cavity),  mw/2,0, -depth/2));   // 右内壁
-    // 固定框(四边·承风·在口沿略凸出 z≈0)
-    var t = 0.05, fz = 0.03, fd = 0.10;
-    g.add(at(box(mw+t*2, t, fd, MAT.frame), 0, mh/2, fz));
-    g.add(at(box(mw+t*2, t, fd, MAT.frame), 0,-mh/2, fz));
-    g.add(at(box(t, mh+t*2, fd, MAT.frame), -mw/2,0, fz));
-    g.add(at(box(t, mh+t*2, fd, MAT.frame),  mw/2,0, fz));
-    // 多片联动百叶(坐在口沿平面 z≈0,绕各自下缘转,上缘后掀进风道)
+    // 固定框(梯形·上宽下窄·承风·在口沿略凸出 z≈0)
+    var wTop = mw, wBot = mw*0.58, t = 0.03, fd = 0.07;
+    g.add(at(trapRing(wTop, wBot, mh, t, fd, MAT.frame), 0, 0, -0.02));
+    // 多片联动百叶(随梯形逐片收窄·绕上缘转·全速放平)
     var chord = (mh / SLAT_N) * 1.12;                  // 略重叠 → 竖直闭合时层叠不透光
-    var span  = mw * 0.94, camber = 0.05;
-    var i, y0;
+    var camber = 0.05, i, y0, u, spanI;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
       y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布(上缘=铰链·绕它转)
+      u = (y0 + mh/2)/mh; spanI = (wBot + (wTop-wBot)*u) * 0.92;  // 该片所在高度的梯形宽度
       s.position.set(0, y0 + chord/2, 0.004 + i*0.004);// 上缘对到该片顶部 + 微 z 错层(防竖直闭合 z-fighting)
       s.userData.chord = chord;                        // 给验证探针用
-      var blade = makeSlat(span, chord, camber, MAT.slat);
-      s.add(blade);
-      s.add(at(box(span, 0.018, 0.03, MAT.edge), 0, -chord, 0.012)); // 自由(下)缘橙色描边=动效指示
+      s.add(makeSlat(spanI, chord, camber, MAT.slat));
+      s.add(at(box(spanI, 0.018, 0.03, MAT.edge), 0, -chord, 0.012)); // 自由(下)缘橙色描边=动效指示
       g.add(s); slats.push(s);
     }
     return { g:g, slats:slats };
