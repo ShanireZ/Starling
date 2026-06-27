@@ -329,6 +329,17 @@
   // 调试:右进气口在当前特写下的屏幕归一化坐标(用于对中)
   window.__starlingNDC = function(){ var p=new T.Vector3(); pivot.rotation.set(rotX,rotY,0); pivot.updateMatrixWorld(true); intakes[1].g.getWorldPosition(p); cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true); cam.matrixWorldInverse.copy(cam.matrixWorld).invert(); p.project(cam); return {x:+p.x.toFixed(2), y:+p.y.toFixed(2)}; };
 
+  // 调试:某片百叶弦线两端在**当前相机/屏幕**上的朝向(捕捉透视下的真实观感)
+  window.__starlingScreenOrient = function(openPct){
+    pivot.rotation.set(rotX,rotY,0); setOpen(openPct/100); scene.updateMatrixWorld(true);
+    cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true); cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+    var s=intakes[1].slats[1], c=s.userData.chord;
+    var a=s.localToWorld(new T.Vector3(0, c/2,0)).project(cam);
+    var b=s.localToWorld(new T.Vector3(0,-c/2,0)).project(cam);
+    var dx=Math.abs(a.x-b.x), dy=Math.abs(a.y-b.y);
+    return { screen_dx:+dx.toFixed(3), screen_dy:+dy.toFixed(3), 屏幕上看着:(dy>dx?'竖直':'水平') };
+  };
+
   // 调试:整车包围盒 + 当前视角下整车在屏幕的投影范围(对框用,稳定后可删)
   window.__starlingInfo = function(){
     var rememberY=pivot.rotation.y, rememberX=pivot.rotation.x;
