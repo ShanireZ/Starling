@@ -212,7 +212,7 @@
       y = pos.getY(i); v = (y + chord/2)/chord;      // 0..1 沿弦
       pos.setZ(i, camber*Math.sin(Math.PI*v));        // 外凸起拱
     }
-    geo.translate(0, -chord/2, 0);                     // 把"上缘"移到原点 → 绕上缘(铰链)转,下缘外掀
+    // 不平移 → 绕**中心**转(威尼斯百叶式:竖直闭合 ↔ 水平放平,开合两端都基本贴面、不向前凸出)
     geo.computeVertexNormals();
     return new T.Mesh(geo, m);
   }
@@ -237,10 +237,10 @@
       var s = new T.Group();
       y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布(上缘=铰链·绕它转)
       u = (y0 + mh/2)/mh; spanI = (wBot + (wTop-wBot)*u) * 0.92;  // 该片所在高度的梯形宽度
-      s.position.set(0, y0 + chord/2, 0.004 + i*0.004);// 上缘对到该片顶部 + 微 z 错层(防竖直闭合 z-fighting)
+      s.position.set(0, y0, 0.004 + i*0.004);          // 中心对到该片中点 + 微 z 错层(防竖直闭合 z-fighting)
       s.userData.chord = chord;                        // 给验证探针用
       s.add(makeSlat(spanI, chord, camber, MAT.slat));
-      s.add(at(box(spanI, 0.018, 0.03, MAT.edge), 0, -chord, 0.012)); // 自由(下)缘橙色描边=动效指示
+      s.add(at(box(spanI, 0.018, 0.03, MAT.edge), 0, -chord/2, 0.012)); // 前(下)缘橙色描边=动效指示
       g.add(s); slats.push(s);
     }
     return { g:g, slats:slats };
@@ -268,8 +268,8 @@
   window.__starlingProbe = function(openPct){
     setOpen(openPct/100); scene.updateMatrixWorld(true);
     var ig = intakes[0].g, s = intakes[0].slats[1], c = s.userData.chord;
-    var top  = ig.worldToLocal(s.localToWorld(new T.Vector3(0,0,0)));    // 上缘=铰链(贴面固定)
-    var bot  = ig.worldToLocal(s.localToWorld(new T.Vector3(0,-c,0)));   // 下缘=自由端(外掀)
+    var top  = ig.worldToLocal(s.localToWorld(new T.Vector3(0, c/2,0)));  // 上缘
+    var bot  = ig.worldToLocal(s.localToWorld(new T.Vector3(0,-c/2,0)));  // 下缘
     var spn  = ig.worldToLocal(s.localToWorld(new T.Vector3(0.1,0,0)));  // 展向参考点
     var n = new T.Vector3().crossVectors(spn.clone().sub(top), bot.clone().sub(top)).normalize();
     if(n.z < 0) n.multiplyScalar(-1);                                    // 统一取朝外(+Z)法线
