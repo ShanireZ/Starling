@@ -56,8 +56,8 @@
   </div>
   <div class="mhint">真车模型:<span id="mstatus">未加载（当前为占位体块）</span> · 把 <b>.glb / .gltf</b> 文件<b>拖进上方画面</b>即加载,或用 <code>?model=URL</code> · 滚轮缩放</div>
   <p class="note">
-    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:初始静止时叶片<b>竖直贴面</b>齐平封口,随车速张开——叶片绕<b>上缘铰链</b>外掀、<b>下缘凸出车体</b>(像鳃片 / scoop 张开)、露出身后<b>深腔</b>;迎风的外/上表面把正面来风<b>向上导出</b> → 反作用力把车身往下压(微<b>下压力,绝不升力/抬车头</b>)。固定框承受风载,叶片为有弧度的翼型薄片。<br>
-    <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):可见气流绕过车体 + 百叶张开把流线<b>向上导</b>(暖色流线·随车速增强)——仅作<b>机制演示</b>,非性能验证。<br>
+    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:初始静止时叶片<b>竖直贴面</b>齐平封口;随车速张开,<b>全速时转到水平(顺气流 / 羽化)= 低阻通风口</b>(高速主打<b>低阻</b>,不追求下压力)。中途约 -45° 会短暂偏流上挑(过渡态)。固定框承受风载。<br>
+    <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):气流绕过车体;百叶中途偏流时流线被<b>上挑</b>(暖色),<b>全速放平后流线顺流穿过</b>(低阻)——仅作<b>机制演示</b>,非性能验证。<br>
     本页为<b>整车按真实尺寸建模</b>(长 2.05 / 高 1.11 / 轴距 1.43 m,前后 17" 轮,实测对齐 GSX250R 规格;数据见 <code>docs/gsx250r-reference.md</code>)。曲面 / 车漆为<b>风格化 CG(非照片级)</b>;需照片级真模时把 <b>.glb 拖进画面</b>。约束见 <code>docs/charter.md</code>。
   </p>
 </div>
@@ -189,10 +189,10 @@
   }
 
   // ============ 电子百叶进气口（固定框 + 联动百叶）============
-  // 调参常量:百叶张合角度(度)。**负角=绕上缘铰链转、下缘向外掀出凸出车体**(像鳃片/scoop 张开)。
-  // 物理:叶片迎风的外/上表面把正面来风导向「上方」→ 反作用力压车身向下 = 下压力(绝不升力)。
+  // 调参常量:百叶张合角度(度)。**负角=绕上缘铰链转、下缘向外掀**;0°竖直封口 → -90°水平羽化。
+  // 物理(owner 选 B「高速低阻」):全速 -90° 叶片**顺气流=羽化→最小阻力、不导流**;中途(~-45°)才短暂偏流。
   var SLAT_CLOSED_DEG = 0;    // 初始(0 km/h):叶片**竖直贴面**(齐平封口)
-  var SLAT_OPEN_DEG   = -45;  // 张开到顶:下缘外掀凸出车体 **45°**(上缘铰链贴面) → 迎面风上导出(下压力)
+  var SLAT_OPEN_DEG   = -90;  // 全速:叶片转到**水平(顺气流·羽化)= 低阻通风口**(不追求下压力)
   var SLAT_N = 4;
 
   // 有弧度的翼型薄片(沿弦向起拱,DoubleSide 薄叶)
@@ -291,7 +291,7 @@
 
   // ---- 滑杆 / 自动 / 视角 ----
   var speed = document.getElementById('speed'), out = document.getElementById('out');
-  function txt(v){ return (v<=2 ? '闭合（竖直）' : (v>=98 ? '全开（-45°）' : '开度 '+Math.round(v)+'%')) + ' · ' + Math.round(v) + ' km/h'; }
+  function txt(v){ return (v<=2 ? '闭合（竖直）' : (v>=98 ? '全开（水平·低阻）' : '开度 '+Math.round(v)+'%')) + ' · ' + Math.round(v) + ' km/h'; }
   var cur = 0;
   function applyV(v){ cur=v; setOpen(v/100); out.textContent = txt(v); speed.value = Math.round(v); }
   var auto=true, dir=1, hold=0, ab=document.getElementById('auto');
@@ -348,10 +348,12 @@
   var _d=new T.Vector3(), _v=new T.Vector3(), _p=new T.Vector3();
   function fieldVel(p, openFrac, out){
     out.set(0,0,-U_WIND);
+    // 偏流强度:叶片角 0°(竖直封口)与 90°(水平羽化)都 ≈0,~45° 最大 → 全速放平=不导流(低阻)
+    var defl = Math.sin(Math.max(0,Math.min(1,openFrac))*Math.PI);
     _d.copy(p).sub(SRC); var r=_d.length()+0.05; out.addScaledVector(_d,  M_BODY/(r*r*r));
     _d.copy(p).sub(SNK); r=_d.length()+0.05; out.addScaledVector(_d, -M_BODY/(r*r*r));
-    _d.copy(p).sub(IL); var g=Math.exp(-_d.lengthSq()/0.05); out.y += openFrac*1.8*g; out.x -= openFrac*0.6*g;
-    _d.copy(p).sub(IR); g=Math.exp(-_d.lengthSq()/0.05);     out.y += openFrac*1.8*g; out.x += openFrac*0.6*g;
+    _d.copy(p).sub(IL); var g=Math.exp(-_d.lengthSq()/0.05); out.y += defl*1.8*g; out.x -= defl*0.6*g;
+    _d.copy(p).sub(IR); g=Math.exp(-_d.lengthSq()/0.05);     out.y += defl*1.8*g; out.x += defl*0.6*g;
     if(p.y<0.02 && out.y<0) out.y=0;
     var l=out.length(); if(l>2.4) out.multiplyScalar(2.4/l);
     return out;
