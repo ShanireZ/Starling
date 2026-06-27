@@ -82,7 +82,7 @@
 
   // ---- 灯光（汽车漆质感:半球天光 + 主光 + 蓝冷边光）----
   scene.add(new T.HemisphereLight(0xbcd2ff, 0x2a2118, 0.85));
-  var key = new T.DirectionalLight(0xffffff, 0.95); key.position.set(5, 9, 7); scene.add(key);
+  var key = new T.DirectionalLight(0xffffff, 0.70); key.position.set(5, 9, 7); scene.add(key);
   var rim = new T.DirectionalLight(0x88aaff, 0.45); rim.position.set(-6, 4, -6); scene.add(rim);
   var fill = new T.DirectionalLight(0xffffff, 0.25); fill.position.set(0, 2, 9); scene.add(fill);
 
@@ -92,7 +92,7 @@
   function rough(c){ return new T.MeshStandardMaterial({color:c, roughness:0.85, metalness:0.1}); }
   var MAT = {
     body:   paint(0x1f5fd6),       // 车漆蓝(整流罩)
-    slat:   new T.MeshStandardMaterial({color:0xc6d2e2, roughness:0.62, metalness:0.12}), // 百叶=哑光浅银(平板感·不反光成圆柱)
+    slat:   new T.MeshStandardMaterial({color:0x9aa4b6, roughness:0.7, metalness:0.1}), // 百叶=哑光中灰蓝(不过曝·见明暗看出平板)
     frame:  metalDark(0x222833),   // 固定框(深色阳极)
     cavity: new T.MeshStandardMaterial({color:0x05070b, roughness:0.98, metalness:0.0, side:T.DoubleSide}), // 内凹腔(更黑·拉对比)
     tire:   rough(0x14130f),
@@ -100,7 +100,7 @@
     disc:   metalDark(0x9aa0a8),
     fork:   metalDark(0x4b5158),
     screen: new T.MeshStandardMaterial({color:0x0e141c, roughness:0.15, metalness:0.2, transparent:true, opacity:0.42, side:T.DoubleSide}),
-    head:   new T.MeshStandardMaterial({color:0xdfeaff, emissive:0xbcd6ff, emissiveIntensity:0.9, roughness:0.3}),
+    head:   new T.MeshStandardMaterial({color:0xaebfd6, emissive:0x9ec0ff, emissiveIntensity:0.28, roughness:0.25, metalness:0.3}),
     mirror: metalDark(0x2a2f37)
   };
 
@@ -180,9 +180,9 @@
   }
   var cowl = box(0.40,0.34,0.40,MAT.body); cowl.position.set(0,0.90,0.66); cowl.rotation.x=0.10; bike.add(cowl);
   bike.add(at(box(0.30,0.12,0.26,MAT.body), 0,1.02,0.56));            // 罩眉 / 风挡基座
-  var lt = cyl(0.07,0.07,0.05,18,MAT.head); lt.rotation.x=Math.PI/2; lt.position.set(0,0.95,0.865); bike.add(lt);  // 上头灯
-  var lb = cyl(0.07,0.07,0.05,18,MAT.head); lb.rotation.x=Math.PI/2; lb.position.set(0,0.82,0.875); bike.add(lb);  // 下头灯
-  bike.add(at(box(0.20,0.30,0.04,MAT.frame), 0,0.89,0.85));           // 灯罩黑底
+  bike.add(at(box(0.20,0.30,0.05,MAT.frame), 0,0.89,0.84));           // 灯罩黑底(先放·灯嵌其中)
+  var lt = cyl(0.05,0.05,0.04,6,MAT.head); lt.rotation.x=Math.PI/2; lt.rotation.y=Math.PI/6; lt.position.set(0,0.95,0.86); bike.add(lt);  // 上头灯(小六角投射)
+  var lb = cyl(0.05,0.05,0.04,6,MAT.head); lb.rotation.x=Math.PI/2; lb.rotation.y=Math.PI/6; lb.position.set(0,0.83,0.86); bike.add(lb);  // 下头灯
   var screen = box(0.28,0.24,0.02,MAT.screen); screen.position.set(0,1.00,0.58); screen.rotation.x=-0.55; bike.add(screen);
 
   // 前 / 后挡泥板 + 后视镜 + 把手
