@@ -42,6 +42,7 @@
   </div>
   <div class="btns">
     <button id="auto">▶ 自动播放</button>
+    <button id="flow">🌫 风洞气流</button>
     <button id="focus">🔍 进气口特写</button>
     <button data-y="0.62" data-x="0.16">整车斜视</button>
     <button data-y="0" data-x="0.05">正视</button>
@@ -56,7 +57,8 @@
   <div class="mhint">真车模型:<span id="mstatus">未加载（当前为占位体块）</span> · 把 <b>.glb / .gltf</b> 文件<b>拖进上方画面</b>即加载,或用 <code>?model=URL</code> · 滚轮缩放</div>
   <p class="note">
     <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:初始静止时叶片<b>竖直贴面</b>齐平封口,随车速张开——叶片绕<b>上缘铰链</b>外掀、<b>下缘凸出车体</b>(像鳃片 / scoop 张开)、露出身后<b>深腔</b>;迎风的外/上表面把正面来风<b>向上导出</b> → 反作用力把车身往下压(微<b>下压力,绝不升力/抬车头</b>)。固定框承受风载,叶片为有弧度的翼型薄片。<br>
-    本页为<b>整车按真实尺寸建模</b>(长 2.05 / 高 1.11 / 轴距 1.43 m,前后 17" 轮,实测对齐 GSX250R 规格;数据见 <code>docs/gsx250r-reference.md</code>)。曲面 / 车漆为<b>风格化 CG(非照片级)</b>;需照片级真模时把 <b>.glb 拖进画面</b>。固定框 / 1 自由度等约束见 <code>docs/charter.md</code>。
+    <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):可见气流绕过车体 + 百叶张开把流线<b>向上导</b>(暖色流线·随车速增强)——仅作<b>机制演示</b>,非性能验证。<br>
+    本页为<b>整车按真实尺寸建模</b>(长 2.05 / 高 1.11 / 轴距 1.43 m,前后 17" 轮,实测对齐 GSX250R 规格;数据见 <code>docs/gsx250r-reference.md</code>)。曲面 / 车漆为<b>风格化 CG(非照片级)</b>;需照片级真模时把 <b>.glb 拖进画面</b>。约束见 <code>docs/charter.md</code>。
   </p>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -336,12 +338,74 @@
              screenNDC:{ x:[+Math.min.apply(0,xs).toFixed(2),+Math.max.apply(0,xs).toFixed(2)], y:[+Math.min.apply(0,ys).toFixed(2),+Math.max.apply(0,ys).toFixed(2)] } };
   };
 
+  // ============ 风洞气流可视化（示意流线 + 粒子·非 CFD 解算）============
+  // 启发式流场:① 来流 -Z ② 车体绕流(Rankine 源-汇:鼻锥出/尾部汇→流线绕过车体)
+  // ③ 百叶上导(每侧进气口处局部上向速度,随开度增强)→ 如实呈现"迎面风被向上导出=下压力"。
+  var flowGroup = new T.Group(); flowGroup.visible=false; pivot.add(flowGroup);
+  var U_WIND=1.0, M_BODY=0.16;
+  var SRC=new T.Vector3(0,0.45,0.95), SNK=new T.Vector3(0,0.60,-0.95);
+  var IL=new T.Vector3(-0.27,0.90,0.50), IR=new T.Vector3(0.27,0.90,0.50);
+  var _d=new T.Vector3(), _v=new T.Vector3(), _p=new T.Vector3();
+  function fieldVel(p, openFrac, out){
+    out.set(0,0,-U_WIND);
+    _d.copy(p).sub(SRC); var r=_d.length()+0.05; out.addScaledVector(_d,  M_BODY/(r*r*r));
+    _d.copy(p).sub(SNK); r=_d.length()+0.05; out.addScaledVector(_d, -M_BODY/(r*r*r));
+    _d.copy(p).sub(IL); var g=Math.exp(-_d.lengthSq()/0.05); out.y += openFrac*1.8*g; out.x -= openFrac*0.6*g;
+    _d.copy(p).sub(IR); g=Math.exp(-_d.lengthSq()/0.05);     out.y += openFrac*1.8*g; out.x += openFrac*0.6*g;
+    if(p.y<0.02 && out.y<0) out.y=0;
+    var l=out.length(); if(l>2.4) out.multiplyScalar(2.4/l);
+    return out;
+  }
+  // 静态流线(随开度重算·暖色=被百叶明显上导)
+  var STREAM_SEEDS=[], sy, sxv;
+  for(sxv=-0.30; sxv<=0.301; sxv+=0.15) for(sy=0.18; sy<=1.16; sy+=0.16) STREAM_SEEDS.push(new T.Vector3(sxv,sy,1.35));
+  var streamLines=[];
+  (function(){ for(var i=0;i<STREAM_SEEDS.length;i++){ var geo=new T.BufferGeometry();
+    geo.setAttribute('position', new T.BufferAttribute(new Float32Array(80*3),3));
+    var ln=new T.Line(geo, new T.LineBasicMaterial({color:0x9fd0ff, transparent:true, opacity:0.5}));
+    flowGroup.add(ln); streamLines.push(ln); } })();
+  function rebuildStreamlines(openFrac){
+    var i,s,pos,maxUp,f;
+    for(i=0;i<streamLines.length;i++){ _p.copy(STREAM_SEEDS[i]); pos=streamLines[i].geometry.attributes.position.array; maxUp=0;
+      for(s=0;s<80;s++){ pos[s*3]=_p.x; pos[s*3+1]=_p.y; pos[s*3+2]=_p.z;
+        fieldVel(_p,openFrac,_v); if(_v.y>maxUp) maxUp=_v.y; _v.normalize().multiplyScalar(0.045); _p.add(_v);
+        if(_p.z<-1.5||_p.y>2.2){ for(f=s+1;f<80;f++){ pos[f*3]=_p.x;pos[f*3+1]=_p.y;pos[f*3+2]=_p.z; } break; } }
+      streamLines[i].geometry.attributes.position.needsUpdate=true;
+      streamLines[i].material.color.setHex(maxUp>0.6 ? 0xff8a3d : 0x9fd0ff);
+    }
+  }
+  // 流动粒子(live 烟流)
+  var NP=1400, pPos=new Float32Array(NP*3), i0;
+  function seedParticle(i){ pPos[i*3]=-0.45+Math.random()*0.9; pPos[i*3+1]=0.08+Math.random()*1.18; pPos[i*3+2]=1.15+Math.random()*0.35; }
+  for(i0=0;i0<NP;i0++) seedParticle(i0);
+  var pGeo=new T.BufferGeometry(); pGeo.setAttribute('position', new T.BufferAttribute(pPos,3));
+  var points=new T.Points(pGeo, new T.PointsMaterial({color:0xdcebff, size:0.016, transparent:true, opacity:0.6, depthWrite:false}));
+  flowGroup.add(points);
+  function updateParticles(openFrac){ var i;
+    for(i=0;i<NP;i++){ _p.set(pPos[i*3],pPos[i*3+1],pPos[i*3+2]); fieldVel(_p,openFrac,_v); _p.addScaledVector(_v,0.02);
+      if(_p.z<-1.5||_p.y>2.2||_p.y<0) seedParticle(i); else { pPos[i*3]=_p.x;pPos[i*3+1]=_p.y;pPos[i*3+2]=_p.z; } }
+    pGeo.attributes.position.needsUpdate=true;
+  }
+  // 风洞测试段框
+  var tunnel=new T.Mesh(new T.BoxGeometry(1.0,1.45,3.0), new T.MeshBasicMaterial({color:0x33405e, wireframe:true, transparent:true, opacity:0.12}));
+  tunnel.position.set(0,0.72,-0.1); flowGroup.add(tunnel);
+  // 切换
+  var flowOn=false, _lastOpen=-1, flowBtn=document.getElementById('flow');
+  function setFlow(v){ flowOn=v; flowGroup.visible=v; if(flowBtn) flowBtn.textContent=v?'🌫 风洞:开':'🌫 风洞气流'; if(v) _lastOpen=-1; }
+  if(flowBtn) flowBtn.addEventListener('click', function(){ setFlow(!flowOn); });
+
+  // 验证:右进气口上游种一条流线,返回其最高 y(开比闭应更高 = 百叶把流线上导)
+  window.__starlingFlowCheck = function(openFrac){ _p.set(0.27,0.78,1.3); var maxY=_p.y,s;
+    for(s=0;s<160;s++){ fieldVel(_p,openFrac,_v); _v.normalize().multiplyScalar(0.03); _p.add(_v); if(_p.y>maxY)maxY=_p.y; if(_p.z<-1.4)break; }
+    return { openFrac:openFrac, maxY:+maxY.toFixed(3), endZ:+_p.z.toFixed(2) }; };
+
   window.addEventListener('resize', function(){ W=stage.clientWidth||920; renderer.setSize(W,H); cam.aspect=W/H; cam.updateProjectionMatrix(); });
 
   updAuto(); applyV(18);
   function loop(){
     requestAnimationFrame(loop);
     if(auto){ if(hold>0){ hold--; } else { var v=cur+dir*0.45; if(v>=100){v=100;dir=-1;hold=45;} if(v<=0){v=0;dir=1;hold=45;} applyV(v); } }
+    if(flowOn){ var of=cur/100; if(Math.abs(of-_lastOpen)>0.02){ rebuildStreamlines(of); _lastOpen=of; } updateParticles(of); }
     pivot.rotation.y = rotY; pivot.rotation.x = rotX;
     cam.position.set(tgtX, camY, camDist); cam.lookAt(tgtX, tgtY, tgtZ);
     renderer.render(scene, cam);
