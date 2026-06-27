@@ -50,8 +50,7 @@
     <button data-y="1.55" data-x="0.1">正侧</button>
     <span style="flex:1"></span>
     <span class="leg"><span class="sw" style="background:#1f5fd6"></span>车漆整流罩</span>
-    <span class="leg"><span class="sw" style="background:#cdd9ef"></span>联动百叶</span>
-    <span class="leg"><span class="sw" style="background:#ff7a2f"></span>自由缘(动效指示)</span>
+    <span class="leg"><span class="sw" style="background:#c6d2e2"></span>联动百叶(平薄片)</span>
     <span class="leg"><span class="sw" style="background:#05070b"></span>深风道</span>
   </div>
   <div class="mhint">真车模型:<span id="mstatus">未加载（当前为占位体块）</span> · 把 <b>.glb / .gltf</b> 文件<b>拖进上方画面</b>即加载,或用 <code>?model=URL</code> · 滚轮缩放</div>
@@ -93,8 +92,7 @@
   function rough(c){ return new T.MeshStandardMaterial({color:c, roughness:0.85, metalness:0.1}); }
   var MAT = {
     body:   paint(0x1f5fd6),       // 车漆蓝(整流罩)
-    slat:   new T.MeshStandardMaterial({color:0xcdd9ef, roughness:0.30, metalness:0.72, side:T.DoubleSide}), // 百叶=亮银蓝(衬黑腔)
-    edge:   new T.MeshStandardMaterial({color:0xff7a2f, emissive:0xff5a10, emissiveIntensity:0.55, roughness:0.4}), // 自由缘橙色描边(看清"哪条缘在动")
+    slat:   new T.MeshStandardMaterial({color:0xc6d2e2, roughness:0.62, metalness:0.12}), // 百叶=哑光浅银(平板感·不反光成圆柱)
     frame:  metalDark(0x222833),   // 固定框(深色阳极)
     cavity: new T.MeshStandardMaterial({color:0x05070b, roughness:0.98, metalness:0.0, side:T.DoubleSide}), // 内凹腔(更黑·拉对比)
     tire:   rough(0x14130f),
@@ -204,17 +202,9 @@
   var SLAT_OPEN_DEG   = -90;  // 全速:叶片转到**水平(顺气流·羽化)= 低阻通风口**(不追求下压力)
   var SLAT_N = 4;
 
-  // 有弧度的翼型薄片(沿弦向起拱,DoubleSide 薄叶)
-  function makeSlat(span, chord, camber, m){
-    var seg = 8, geo = new T.PlaneGeometry(span, chord, 2, seg);
-    var pos = geo.attributes.position, i, y, v;
-    for(i=0;i<pos.count;i++){
-      y = pos.getY(i); v = (y + chord/2)/chord;      // 0..1 沿弦
-      pos.setZ(i, camber*Math.sin(Math.PI*v));        // 外凸起拱
-    }
-    // 不平移 → 绕**中心**转(威尼斯百叶式:竖直闭合 ↔ 水平放平,开合两端都基本贴面、不向前凸出)
-    geo.computeVertexNormals();
-    return new T.Mesh(geo, m);
+  // 平薄片(thin box·有厚度·绕中心转:竖直闭合 ↔ 水平放平,开合两端都基本贴面)
+  function makeSlat(span, chord, thick, m){
+    return new T.Mesh(new T.BoxGeometry(span, chord, thick), m);
   }
 
   // 单个进气口:局部 +Z = 出风口外法线(朝气流);span 沿局部 X;百叶绕局部 X 联动
@@ -230,17 +220,16 @@
     // 固定框(梯形·上宽下窄·承风·在口沿略凸出 z≈0)
     var wTop = mw, wBot = mw*0.58, t = 0.03, fd = 0.07;
     g.add(at(trapRing(wTop, wBot, mh, t, fd, MAT.frame), 0, 0, -0.02));
-    // 多片联动百叶(随梯形逐片收窄·绕上缘转·全速放平)
-    var chord = (mh / SLAT_N) * 1.12;                  // 略重叠 → 竖直闭合时层叠不透光
-    var camber = 0.05, i, y0, u, spanI;
+    // 多片联动百叶(平薄片·随梯形逐片收窄·绕中心转·全速放平)
+    var chord = (mh / SLAT_N) * 0.92;                  // 留细缝 → 清晰可读(不叠成楼梯)
+    var i, y0, u, spanI;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
-      y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布(上缘=铰链·绕它转)
-      u = (y0 + mh/2)/mh; spanI = (wBot + (wTop-wBot)*u) * 0.92;  // 该片所在高度的梯形宽度
-      s.position.set(0, y0, 0.004 + i*0.004);          // 中心对到该片中点 + 微 z 错层(防竖直闭合 z-fighting)
+      y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布
+      u = (y0 + mh/2)/mh; spanI = (wBot + (wTop-wBot)*u) * 0.9;   // 该片所在高度的梯形宽度
+      s.position.set(0, y0, 0);                        // 居中·不错层(消除楼梯感)
       s.userData.chord = chord;                        // 给验证探针用
-      s.add(makeSlat(spanI, chord, camber, MAT.slat));
-      s.add(at(box(spanI, 0.018, 0.03, MAT.edge), 0, -chord/2, 0.012)); // 前(下)缘橙色描边=动效指示
+      s.add(makeSlat(spanI, chord, 0.012, MAT.slat));  // 薄平片
       g.add(s); slats.push(s);
     }
     return { g:g, slats:slats };
@@ -292,7 +281,7 @@
   dom.addEventListener('wheel', function(e){ e.preventDefault(); camDist = Math.max(0.8, Math.min(7, camDist + (e.deltaY>0?0.25:-0.25))); }, {passive:false});
 
   function overview(){ camDist=3.4; camY=1.0; tgtX=0; tgtY=0.6; tgtZ=0; }
-  function focusIntake(){ rotY=-0.5; rotX=0; camDist=1.15; camY=0.90; tgtX=0.02; tgtY=0.90; tgtZ=0.53; }
+  function focusIntake(){ rotY=-0.5; rotX=0.05; camDist=1.75; camY=0.95; tgtX=0.02; tgtY=0.88; tgtZ=0.50; }
 
   // ---- 滑杆 / 自动 / 视角 ----
   var speed = document.getElementById('speed'), out = document.getElementById('out');
