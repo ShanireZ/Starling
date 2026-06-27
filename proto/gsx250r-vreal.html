@@ -124,7 +124,7 @@
     var hole=new T.Path();
     hole.moveTo(-wTop/2, h/2); hole.lineTo(wTop/2, h/2); hole.lineTo(wBot/2, -h/2); hole.lineTo(-wBot/2, -h/2); hole.closePath();
     o.holes.push(hole);
-    return new T.Mesh(new T.ExtrudeGeometry(o,{depth:depth, bevelEnabled:false, steps:1}), m);
+    return new T.Mesh(new T.ExtrudeGeometry(o,{depth:depth, bevelEnabled:true, bevelThickness:0.012, bevelSize:0.009, bevelSegments:2, steps:1}), m);
   }
 
   // ============ 整车按真实尺寸建模（单位 m;数据见 docs/gsx250r-reference.md）============
@@ -310,10 +310,10 @@
     o.position.x-=c.x; o.position.z-=c.z; o.position.y+=(sz.y/2-c.y); // 居中并落到地面
   }
   // 鳃口在真车(sports_bike)整流罩上的落位(浏览器实测调出)
-  var GILL_ON_BIKE = { iy:0.80, iz:0.78, scale:0.48, spread:0.19, ry:0.45 };
+  var GILL_ON_BIKE = { iy:0.80, iz:0.76, scale:0.46, spread:0.165, ry:0.5 };
   function placeGillsOnBike(){ var g=GILL_ON_BIKE;
     intakes[0].g.position.set(-g.spread,0,0); intakes[1].g.position.set(g.spread,0,0);
-    intakes[0].g.rotation.y=g.ry; intakes[1].g.rotation.y=-g.ry;
+    intakes[0].g.rotation.y=-g.ry; intakes[1].g.rotation.y=g.ry;   // 左 -·右 +(各自朝外)
     intakeRig.position.set(0,g.iy,g.iz); intakeRig.scale.setScalar(g.scale);
   }
   function showModel(s3){ while(modelGroup.children.length) modelGroup.remove(modelGroup.children[0]); modelGroup.add(s3); fitModel(s3); setPlaceholder(false); placeGillsOnBike(); status('已加载真车模型 Sports Bike(CC-BY·Futurealiti)·鳃口已落位'); }
@@ -326,7 +326,7 @@
   // 进气口落位助手(换真车后用:整体高度/前后/大小/左右间距)
   window.__placeGills = function(iy, iz, scale, spread, ry){
     intakes[0].g.position.set(-spread, 0, 0); intakes[1].g.position.set(spread, 0, 0);
-    if(ry!==undefined){ intakes[0].g.rotation.y = ry; intakes[1].g.rotation.y = -ry; }
+    if(ry!==undefined){ intakes[0].g.rotation.y = -ry; intakes[1].g.rotation.y = ry; }
     intakeRig.position.set(0, iy, iz); intakeRig.scale.setScalar(scale);
     return {iy:iy, iz:iz, scale:scale, spread:spread, ry:ry};
   };
