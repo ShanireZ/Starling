@@ -242,47 +242,50 @@
 
   // 单个进气口(MotoGP 导气口语言:一体式碳罩 + NACA 漏斗喉壁 + 中央分隔双槽 + 上下盖条 + 5 薄片 + 霁青唇沿 + 旁置 strake):
   // 局部 +Z = 开口朝车头(迎风);span 沿局部 X;百叶绕局部 X 联动;后侧通透(气流穿叶入车体)
+  // 解耦:mw/mh=大外壳前脸尺寸(侧面看大箱);迎风百叶口=壳前脸中间一个小开口(缩减)
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
-    var wTop = mw*0.92, wBot = mw, t = 0.015, fd = 0.3;    // t=罩壁厚(薄);fd=外壳前后深度(加大→侧面看是大壳体·开口仍朝前)
-    var fz = 0.012, hw = mw/2, hh = mh/2;
-    // —— 一体式外罩 = 一根深挤出圆角梯形管(前缘小倒角=唇·内壁=喉壁·后侧通透·从唇到喉一片碳壳) ——
-    var shell = trapRing(wTop, wBot, mh, t, fd, MAT.frame); shell.position.set(0,0,-fd*0.8); g.add(shell);
-    // —— NACA **缓**收口喉壁:四面微内倾(前大后小·只缓收到 0.8 → 后方保持畅通·不收死) ——
+    var fd = 0.2;                                          // 进气道前后深度(侧面看的"宽度"=当前4倍 0.05→0.2)
+    var fz = 0.012, hw = mw/2, hh = mh/2;                  // 框半宽/半高
+    var mwM = mw*0.9, mhM = mh*0.86;                       // 迎风口(百叶)≈占满前脸·薄框
+    var hwM = mwM/2, hhM = mhM/2, tBig = (mw-mwM)/2;       // tBig=壳前脸实心边(把小口包在大壳里)
+    // —— 大外壳 = 厚边圆角梯形管(前脸实心·中间小口·深挤出 → 侧面看大箱、正面看小迎风口) ——
+    var shell = trapRing(mwM, mwM*0.92, mhM, tBig, fd, MAT.frame); shell.position.set(0,0,-fd*0.8); g.add(shell);
+    // —— NACA 缓收口喉壁(在小口后方) ——
     var fdep = fd*0.92, bs = 0.8;
-    var dyT = hh*(1-bs), lenT = Math.hypot(fdep, dyT), aT = Math.atan2(dyT, fdep);
-    var topW = box(mw, 0.01, lenT, MAT.cavity); topW.position.set(0,  hh-dyT/2, -fdep/2); topW.rotation.x = -aT; g.add(topW);
-    var botW = box(mw, 0.01, lenT, MAT.cavity); botW.position.set(0, -hh+dyT/2, -fdep/2); botW.rotation.x =  aT; g.add(botW);
-    var dxS = hw*(1-bs), lenS = Math.hypot(fdep, dxS), aS = Math.atan2(dxS, fdep);
-    var lW = box(0.01, mh, lenS, MAT.cavity); lW.position.set(-hw+dxS/2, 0, -fdep/2); lW.rotation.y = -aS; g.add(lW);
-    var rW = box(0.01, mh, lenS, MAT.cavity); rW.position.set( hw-dxS/2, 0, -fdep/2); rW.rotation.y =  aS; g.add(rW);
-    // —— 唇沿霁青细描边(仅一圈细线·MotoGP 赞助商 pinstripe 感) ——
-    g.add(at(trapRing(wTop, wBot, mh, 0.004, 0.006, MAT.accent), 0, 0, fz+0.018));
-    // —— 中央竖向分隔 → 左右两槽 ——
-    g.add(at(box(0.014, mh*0.86, 0.045, MAT.frame), 0, 0, fz-0.022));
-    // —— 上/下静态盖条(框成 louvre bank·按高度比例) ——
-    var capH = mh*0.12;
-    g.add(at(box(mw*0.86, capH, 0.024, MAT.frame), 0,  hh-capH*0.5, fz));
-    g.add(at(box(mw*0.86, capH, 0.024, MAT.frame), 0, -hh+capH*0.5, fz));
-    // —— 两侧对称竖向 strake(后缘锯齿 shark-tooth·KTM)+ L 形翼端板 ——
+    var dyT = hhM*(1-bs), lenT = Math.hypot(fdep, dyT), aT = Math.atan2(dyT, fdep);
+    var topW = box(mwM, 0.01, lenT, MAT.cavity); topW.position.set(0,  hhM-dyT/2, -fdep/2); topW.rotation.x = -aT; g.add(topW);
+    var botW = box(mwM, 0.01, lenT, MAT.cavity); botW.position.set(0, -hhM+dyT/2, -fdep/2); botW.rotation.x =  aT; g.add(botW);
+    var dxS = hwM*(1-bs), lenS = Math.hypot(fdep, dxS), aS = Math.atan2(dxS, fdep);
+    var lW = box(0.01, mhM, lenS, MAT.cavity); lW.position.set(-hwM+dxS/2, 0, -fdep/2); lW.rotation.y = -aS; g.add(lW);
+    var rW = box(0.01, mhM, lenS, MAT.cavity); rW.position.set( hwM-dxS/2, 0, -fdep/2); rW.rotation.y =  aS; g.add(rW);
+    // —— 小口唇沿霁青细描边 ——
+    g.add(at(trapRing(mwM, mwM*0.92, mhM, 0.004, 0.006, MAT.accent), 0, 0, fz+0.018));
+    // —— 中央竖向分隔(小口内) ——
+    g.add(at(box(0.012, mhM*0.86, 0.045, MAT.frame), 0, 0, fz-0.022));
+    // —— 上/下静态盖条(小口内) ——
+    var capH = mhM*0.12;
+    g.add(at(box(mwM*0.86, capH, 0.024, MAT.frame), 0,  hhM-capH*0.5, fz));
+    g.add(at(box(mwM*0.86, capH, 0.024, MAT.frame), 0, -hhM+capH*0.5, fz));
+    // —— 两侧对称竖向 strake(壳体外缘·后缘锯齿 KTM)+ L 形翼端板 ——
     var ss, fin, fg;
     for(ss=-1; ss<=1; ss+=2){
-      fin = serratedFin(0.07, mh*0.86, 0.007, 5, 0.012, MAT.frame);
+      fin = serratedFin(0.07, mh*0.82, 0.007, 5, 0.012, MAT.frame);
       fg = new T.Group(); fg.add(fin);
-      fg.position.set(ss*(hw+0.018), 0, fz+0.006); fg.rotation.y = ss*0.16; g.add(fg);
-      fg.add(at(box(0.026, 0.006, 0.05, MAT.frame), ss*0.011, mh*0.43, 0.02));   // L 形端板(顶·外伸)
+      fg.position.set(ss*(hw+0.012), 0, fz+0.006); fg.rotation.y = ss*0.16; g.add(fg);
+      fg.add(at(box(0.026, 0.006, 0.05, MAT.frame), ss*0.011, mh*0.43, 0.02));
     }
-    // —— 上方 winglet(横向薄翼 + 两端翼端板·MotoGP 标志空力件) ——
+    // —— 上方 winglet(壳体顶·横向薄翼 + 两端翼端板) ——
     var wing = box(mw*0.78, 0.01, 0.055, MAT.frame); wing.position.set(0, hh+0.042, fz+0.02); wing.rotation.x = -0.12; g.add(wing);
     for(ss=-1; ss<=1; ss+=2) g.add(at(box(0.008, 0.032, 0.05, MAT.frame), ss*mw*0.38, hh+0.05, fz+0.02));
-    // —— 下缘 gurney lip / 地效台阶示意(底部小段差唇·略前倾) ——
+    // —— 下缘 gurney lip(壳体底·地效台阶示意) ——
     var gurney = box(mw*0.92, 0.009, 0.03, MAT.frame); gurney.position.set(0, -hh-0.006, fz+0.022); gurney.rotation.x = 0.25; g.add(gurney);
-    // —— 5 薄片联动百叶(Aprilia five-element·绕中心转·全开近水平) ——
-    var inner = mh - capH*2, chord = (inner/SLAT_N)*0.84, i, y0, u, spanI;
+    // —— 5 薄片联动百叶(在小口内·Aprilia five-element) ——
+    var inner = mhM - capH*2, chord = (inner/SLAT_N)*0.84, i, y0, u, spanI;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
       y0 = inner/2 - inner/SLAT_N*(i+0.5);
-      u = (y0+mh/2)/mh; spanI = (wBot-(wBot-wTop)*u)*0.86;
+      u = (y0+mhM/2)/mhM; spanI = (mwM*0.92 + mwM*0.08*u)*0.86;
       s.position.set(0, y0, fz);
       s.userData.chord = chord;
       s.add(makeSlat(spanI, chord, 0.009, MAT.slat));
@@ -302,7 +305,7 @@
   var intakeRig = new T.Group(); bike.add(intakeRig);  // 进气口独立成组(换真车模型后整体重定位)
   var intakes = [];
   for(k=0;k<2;k++){ sx=(k===0?-1:1);
-    var iv = makeIntake(0.44, 0.17);                   // 口径加大(填满蓝框·长度加大)
+    var iv = makeIntake(0.153, 0.173);                 // 口面 宽-1/3 高+1/3(变窄变高·正面观)
     iv.g.position.set(sx*0.27, 0.92, 0.46);
     iv.g.rotation.y = sx*0.50;                         // 朝前外侧(贴侧整流罩)
     intakeRig.add(iv.g);
