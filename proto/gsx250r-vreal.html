@@ -93,9 +93,10 @@
   function rough(c){ return new T.MeshStandardMaterial({color:c, roughness:0.85, metalness:0.1}); }
   var MAT = {
     body:   paint(0x1f5fd6),       // 车漆蓝(整流罩)
-    slat:   new T.MeshStandardMaterial({color:0x9aa3b2, roughness:0.62, metalness:0.18}), // 百叶=中银蓝薄片(拾光读出叶片明暗·不过曝)
-    frame:  metalDark(0x222833),   // 固定框(深色阳极)
-    cavity: new T.MeshStandardMaterial({color:0x05070b, roughness:0.98, metalness:0.0, side:T.DoubleSide}), // 内凹腔(更黑·拉对比)
+    slat:   new T.MeshStandardMaterial({color:0x6a727c, roughness:0.45, metalness:0.62}), // 百叶=枪灰金属薄片(拾光读出开合·偏碳但保可见)
+    frame:  new T.MeshStandardMaterial({color:0x1c1e22, roughness:0.6, metalness:0.5}),   // 碳纤唇口/框(哑光结构碳)
+    accent: new T.MeshStandardMaterial({color:0x5d8a8c, roughness:0.4, metalness:0.3}),   // 唇沿点缀(霁青·MotoGP 单色描边·仅唇沿)
+    cavity: new T.MeshStandardMaterial({color:0x0a0b0d, roughness:0.95, metalness:0.1, side:T.DoubleSide}), // 深黑喉道(拉纵深)
     tire:   rough(0x14130f),
     rim:    metalDark(0x3a3f47),
     disc:   metalDark(0x9aa0a8),
@@ -117,14 +118,27 @@
   function cyl(rt,rb,h,seg,m){ return new T.Mesh(new T.CylinderGeometry(rt,rb,h,seg), m); }
   // three.js 的 Object3D.position 是只读属性,不能用 Object.assign 赋值 → 统一用此助手设位
   function at(mesh,x,y,z){ mesh.position.set(x,y,z); return mesh; }
-  // 梯形框(上宽下窄·挤出成边框环):外梯形 + 内梯形挖洞 → ExtrudeGeometry
+  // 圆润气道边框(NACA / MotoGP 导气口观感):圆角梯形外环 + 圆角内孔挖洞 + 大段光滑倒角唇口 → ExtrudeGeometry
   function trapRing(wTop,wBot,h,t,depth,m){
-    var o=new T.Shape();
-    o.moveTo(-wTop/2-t, h/2+t); o.lineTo(wTop/2+t, h/2+t); o.lineTo(wBot/2+t, -h/2-t); o.lineTo(-wBot/2-t, -h/2-t); o.closePath();
-    var hole=new T.Path();
-    hole.moveTo(-wTop/2, h/2); hole.lineTo(wTop/2, h/2); hole.lineTo(wBot/2, -h/2); hole.lineTo(-wBot/2, -h/2); hole.closePath();
-    o.holes.push(hole);
-    return new T.Mesh(new T.ExtrudeGeometry(o,{depth:depth, bevelEnabled:true, bevelThickness:0.012, bevelSize:0.009, bevelSegments:2, steps:1}), m);
+    // 圆角梯形 Shape:四角用二次贝塞尔抹圆(c=角点,从前一边 r 处切入、向后一边 r 处切出)
+    function rquad(wT,wB,hh,r){
+      var P=[[-wT/2,hh/2],[wT/2,hh/2],[wB/2,-hh/2],[-wB/2,-hh/2]], sh=new T.Shape(), i;
+      for(i=0;i<4;i++){
+        var c=P[i], pv=P[(i+3)%4], nx=P[(i+1)%4];
+        var ax=c[0]-pv[0], ay=c[1]-pv[1], la=Math.hypot(ax,ay); ax/=la; ay/=la;
+        var bx=nx[0]-c[0], by=nx[1]-c[1], lb=Math.hypot(bx,by); bx/=lb; by/=lb;
+        var rr=Math.min(r, la*0.48, lb*0.48);
+        var ix=c[0]-ax*rr, iy=c[1]-ay*rr, ox=c[0]+bx*rr, oy=c[1]+by*rr;
+        if(i===0) sh.moveTo(ix,iy); else sh.lineTo(ix,iy);
+        sh.quadraticCurveTo(c[0],c[1], ox,oy);
+      }
+      sh.closePath(); return sh;
+    }
+    var rad = Math.min(wTop, h) * 0.34;                       // 圆角半径随口径(越大越圆润·接近 stadium/椭圆)
+    var o = rquad(wTop+2*t, wBot+2*t, h+2*t, rad+t);
+    o.holes.push(rquad(wTop, wBot, h, rad));
+    return new T.Mesh(new T.ExtrudeGeometry(o,{depth:depth, bevelEnabled:true,
+      bevelThickness:depth*0.7, bevelSize:Math.min(t*0.6, 0.02), bevelSegments:6, steps:1}), m);  // 大倒角+多段=圆润唇口
   }
 
   // ============ 整车按真实尺寸建模（单位 m;数据见 docs/gsx250r-reference.md）============
@@ -199,39 +213,46 @@
   // ============ 电子百叶进气口（固定框 + 联动百叶）============
   // 调参常量:百叶张合角度(度)。**负角=绕上缘铰链转、下缘向外掀**;0°竖直封口 → -90°水平羽化。
   // 物理(owner 选 B「高速低阻」):全速 -90° 叶片**顺气流=羽化→最小阻力、不导流**;中途(~-45°)才短暂偏流。
-  var SLAT_CLOSED_DEG = 0;    // 初始(0 km/h):叶片**竖直贴面**(齐平封口)
-  var SLAT_OPEN_DEG   = -90;  // 全速:叶片转到**水平(顺气流·羽化)= 低阻通风口**(不追求下压力)
-  var SLAT_N = 4;
+  var SLAT_CLOSED_DEG = 0;    // 初始(0 km/h):叶片**竖直封口**(挡住喉道)
+  var SLAT_OPEN_DEG   = -80;  // 全速:叶片转到**近水平(略带下倾·MotoGP 不到满 90°)= 通风**
+  var SLAT_N = 5;             // 阿普利亚"五元素格栅"=5 薄片
 
   // 平薄片(thin box·有厚度·绕中心转:竖直闭合 ↔ 水平放平,开合两端都基本贴面)
   function makeSlat(span, chord, thick, m){
     return new T.Mesh(new T.BoxGeometry(span, chord, thick), m);
   }
 
-  // 单个进气口:局部 +Z = 出风口外法线(朝气流);span 沿局部 X;百叶绕局部 X 联动
-  // 贴面式浅腔 louvre 面板:框前缘≈车体表面(齐平不外凸)、浅内凹露暗底、叶片为主视觉
+  // 单个进气口(MotoGP 导气口语言:抬升碳唇 + NACA 深黑喉道 + 中央分隔双槽 + 上下盖条 + 5 薄片 + 霁青唇沿):
+  // 局部 +Z = 开口朝车头(迎风);span 沿局部 X;百叶绕局部 X 联动;后侧通透(气流穿叶入车体)
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
-    var depth = mh * 0.32;                             // ★浅内凹腔(贴面式·非深盒子,避免"贴块"突兀)
-    // —— 浅风道:后壁 + 上/下/左/右四面短内壁(暗色,造一点深度)——
-    var back = box(mw, mh, 0.014, MAT.cavity); back.position.set(0,0,-depth); g.add(back);
-    g.add(at(box(mw, 0.014, depth, MAT.cavity), 0, mh/2, -depth/2));   // 顶内壁
-    g.add(at(box(mw, 0.014, depth, MAT.cavity), 0,-mh/2, -depth/2));   // 底内壁
-    g.add(at(box(0.014, mh, depth, MAT.cavity), -mw/2,0, -depth/2));   // 左内壁
-    g.add(at(box(0.014, mh, depth, MAT.cavity),  mw/2,0, -depth/2));   // 右内壁
-    // 固定框(梯形·上宽下窄·承风)——薄边、前缘居中于 z=0 → 齐平贴面、几乎不外凸
-    var wTop = mw, wBot = mw*0.62, t = 0.022, fd = 0.022;
-    g.add(at(trapRing(wTop, wBot, mh, t, fd, MAT.frame), 0, 0, -fd/2));
-    // 多片联动百叶(平薄片·随梯形逐片收窄·绕中心转·全速放平)
-    var chord = (mh / SLAT_N) * 0.94;                  // 留细缝 → 清晰可读(不叠成楼梯)
+    var wTop = mw*0.86, wBot = mw, t = 0.03, fd = 0.045;   // 口型=下宽上窄(MotoGP downwash 口)
+    var depth = mh * 0.55;
+    // —— 深黑通透喉道:四面暗壁、**无后壁**(气流穿过叶片→喉道→入车体)——
+    g.add(at(box(mw, 0.014, depth, MAT.cavity), 0, mh/2, -depth/2));    // 顶喉壁
+    g.add(at(box(mw, 0.014, depth, MAT.cavity), 0,-mh/2, -depth/2));    // 底喉壁
+    g.add(at(box(0.014, mh, depth, MAT.cavity), -mw/2,0, -depth/2));    // 左喉壁
+    g.add(at(box(0.014, mh, depth, MAT.cavity),  mw/2,0, -depth/2));    // 右喉壁
+    // —— 抬升碳纤唇口(圆角梯形·大倒角内凹 scooped lip·略外凸=抬升) ——
+    g.add(at(trapRing(wTop, wBot, mh, t, fd, MAT.frame), 0, 0, -fd*0.32));
+    // —— 唇沿霁青描边(MotoGP 单色描边·仅唇沿一圈薄环) ——
+    g.add(at(trapRing(wTop, wBot, mh, t*0.42, 0.008, MAT.accent), 0, 0, fd*0.34));
+    // —— 中央竖向分隔:把口分成左右两槽(MotoGP 双槽读法) ——
+    g.add(at(box(0.016, mh*0.94, fd*0.95, MAT.frame), 0, 0, -fd*0.05));
+    // —— 上/下静态盖条:把百叶框成 louvre bank ——
+    g.add(at(box(mw*0.9, 0.02, 0.028, MAT.frame), 0,  mh/2-0.013, 0.004));
+    g.add(at(box(mw*0.9, 0.02, 0.028, MAT.frame), 0, -mh/2+0.013, 0.004));
+    // —— 5 片薄联动百叶(Aprilia five-element·绕中心转·全开近水平) ——
+    var inner = mh - 0.052;                            // 盖条之间的可用高度
+    var chord = (inner / SLAT_N) * 0.84;               // 薄片·留细缝
     var i, y0, u, spanI;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
-      y0 = mh/2 - mh/(SLAT_N) * (i + 0.5);             // 自上而下均布
-      u = (y0 + mh/2)/mh; spanI = (wBot + (wTop-wBot)*u) * 0.9;   // 该片所在高度的梯形宽度
-      s.position.set(0, y0, 0);                        // 居中·不错层(消除楼梯感)
-      s.userData.chord = chord;                        // 给验证探针用
-      s.add(makeSlat(spanI, chord, 0.013, MAT.slat));  // 薄平片
+      y0 = inner/2 - inner/SLAT_N * (i + 0.5);         // 盖条之间自上而下均布
+      u = (y0 + mh/2)/mh; spanI = (wBot - (wBot-wTop)*u) * 0.84;   // 随下宽上窄逐片变宽
+      s.position.set(0, y0, 0);
+      s.userData.chord = chord;
+      s.add(makeSlat(spanI, chord, 0.01, MAT.slat));   // 更薄
       g.add(s); slats.push(s);
     }
     return { g:g, slats:slats };
@@ -361,6 +382,12 @@
     if(cant!==undefined)GILL_ON_BIKE.cant=cant;
     snapGillsToModel(); return GILL_ON_BIKE;
   };
+  // 调试:实时设视角 __view(rotY,rotX,camDist,tgtY,tgtZ,tgtX)
+  window.__view = function(ry,rx,dist,ty,tz,tx){
+    if(ry!==undefined)rotY=ry; if(rx!==undefined)rotX=rx; if(dist!==undefined)camDist=dist;
+    if(ty!==undefined)tgtY=ty; if(tz!==undefined)tgtZ=tz; if(tx!==undefined)tgtX=tx;
+    return {rotY:rotY,rotX:rotX,camDist:camDist,camY:camY,tgtX:tgtX,tgtY:tgtY,tgtZ:tgtZ};
+  };
   function showModel(s3){ while(modelGroup.children.length) modelGroup.remove(modelGroup.children[0]); modelGroup.add(s3); fitModel(s3); setPlaceholder(false); snapGillsToModel(); status('已加载真车模型 Sports Bike(CC-BY·Futurealiti)·鳃口已吸附落位'); }
   if(loader){
     stage.addEventListener('dragover', function(e){ e.preventDefault(); });
@@ -406,7 +433,7 @@
   var flowGroup = new T.Group(); flowGroup.visible=false; pivot.add(flowGroup);
   var U_WIND=1.0, M_BODY=0.16;
   var SRC=new T.Vector3(0,0.45,0.95), SNK=new T.Vector3(0,0.60,-0.95);
-  var IL=new T.Vector3(-0.15,0.68,0.55), IR=new T.Vector3(0.29,0.68,0.55);   // 两侧迎风口(开口朝车头)位置
+  var IL=new T.Vector3(-0.16,0.67,0.45), IR=new T.Vector3(0.27,0.67,0.45);   // 纳气目标=叶片后方喉道内(气流穿过叶片进入·非停在口面)
   var _d=new T.Vector3(), _v=new T.Vector3(), _p=new T.Vector3();
   function fieldVel(p, openFrac, out){
     out.set(0,0,-U_WIND);
