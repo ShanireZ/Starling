@@ -14,3 +14,8 @@
 - 车体模型 **"Sports Bike" by Futurealiti**(https://sketchfab.com/3d-models/sports-bike-a80259b859c842d5824c25c61e0fc421),授权 **CC-BY-4.0**。仅作占位 / 演示用的运动摩托车体,**非 Suzuki GSX250R 官方车型**;后续可替换。
 
 > v2 重启。上一版因"为微小性能堆五学科复杂度"而流产;本版以 **收益封顶 + 第一周可观察 + 单人可调 + 禁战线蔓延** 为铁律。
+
+## 许可 / License
+
+- 本项目自有的代码、文档与素材采用 **GNU GPL-3.0**(见 [LICENSE](LICENSE))。Copyright © 2026 ShanireZ。
+- **例外**:`res/sports_bike/` 为第三方模型 **"Sports Bike" by Futurealiti**,授权 **CC-BY-4.0**,其许可与署名以 [`res/sports_bike/license.txt`](res/sports_bike/license.txt) 为准,**不受本仓库 GPL 协议覆盖**。

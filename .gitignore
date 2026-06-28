@@ -18,3 +18,18 @@ desktop.ini
 .env
 .env.*
 !.env.example
+
+# 依赖 / 缓存
+node_modules/
+.cache/
+.parcel-cache/
+
+# 工具 / 代理临时
+.claude/
+.copilot-temp/
+
+# 其它临时
+*.bak
+*.orig
+
+# 注意:AGENTS.md / agents.md 为项目准则,必须跟踪,勿在此排除。
