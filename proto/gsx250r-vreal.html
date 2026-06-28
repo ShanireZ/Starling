@@ -93,7 +93,7 @@
   function rough(c){ return new T.MeshStandardMaterial({color:c, roughness:0.85, metalness:0.1}); }
   var MAT = {
     body:   paint(0x1f5fd6),       // 车漆蓝(整流罩)
-    slat:   new T.MeshStandardMaterial({color:0x9aa4b6, roughness:0.7, metalness:0.1}), // 百叶=哑光中灰蓝(不过曝·见明暗看出平板)
+    slat:   new T.MeshStandardMaterial({color:0x9aa3b2, roughness:0.62, metalness:0.18}), // 百叶=中银蓝薄片(拾光读出叶片明暗·不过曝)
     frame:  metalDark(0x222833),   // 固定框(深色阳极)
     cavity: new T.MeshStandardMaterial({color:0x05070b, roughness:0.98, metalness:0.0, side:T.DoubleSide}), // 内凹腔(更黑·拉对比)
     tire:   rough(0x14130f),
@@ -209,20 +209,21 @@
   }
 
   // 单个进气口:局部 +Z = 出风口外法线(朝气流);span 沿局部 X;百叶绕局部 X 联动
+  // 贴面式浅腔 louvre 面板:框前缘≈车体表面(齐平不外凸)、浅内凹露暗底、叶片为主视觉
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
-    var depth = mh * 0.7;                              // ★风道深度随口径(真实比例的深内凹腔)
-    // —— 深风道箱体:后壁 + 上/下/左/右四面内壁(暗色,造真实深腔)——
-    var back = box(mw, mh, 0.02, MAT.cavity); back.position.set(0,0,-depth); g.add(back);
-    g.add(at(box(mw, 0.02, depth, MAT.cavity), 0, mh/2, -depth/2));   // 顶内壁
-    g.add(at(box(mw, 0.02, depth, MAT.cavity), 0,-mh/2, -depth/2));   // 底内壁
-    g.add(at(box(0.02, mh, depth, MAT.cavity), -mw/2,0, -depth/2));   // 左内壁
-    g.add(at(box(0.02, mh, depth, MAT.cavity),  mw/2,0, -depth/2));   // 右内壁
-    // 固定框(梯形·上宽下窄·承风·在口沿略凸出 z≈0)
-    var wTop = mw, wBot = mw*0.58, t = 0.03, fd = 0.07;
-    g.add(at(trapRing(wTop, wBot, mh, t, fd, MAT.frame), 0, 0, -0.02));
+    var depth = mh * 0.32;                             // ★浅内凹腔(贴面式·非深盒子,避免"贴块"突兀)
+    // —— 浅风道:后壁 + 上/下/左/右四面短内壁(暗色,造一点深度)——
+    var back = box(mw, mh, 0.014, MAT.cavity); back.position.set(0,0,-depth); g.add(back);
+    g.add(at(box(mw, 0.014, depth, MAT.cavity), 0, mh/2, -depth/2));   // 顶内壁
+    g.add(at(box(mw, 0.014, depth, MAT.cavity), 0,-mh/2, -depth/2));   // 底内壁
+    g.add(at(box(0.014, mh, depth, MAT.cavity), -mw/2,0, -depth/2));   // 左内壁
+    g.add(at(box(0.014, mh, depth, MAT.cavity),  mw/2,0, -depth/2));   // 右内壁
+    // 固定框(梯形·上宽下窄·承风)——薄边、前缘居中于 z=0 → 齐平贴面、几乎不外凸
+    var wTop = mw, wBot = mw*0.62, t = 0.022, fd = 0.022;
+    g.add(at(trapRing(wTop, wBot, mh, t, fd, MAT.frame), 0, 0, -fd/2));
     // 多片联动百叶(平薄片·随梯形逐片收窄·绕中心转·全速放平)
-    var chord = (mh / SLAT_N) * 0.92;                  // 留细缝 → 清晰可读(不叠成楼梯)
+    var chord = (mh / SLAT_N) * 0.94;                  // 留细缝 → 清晰可读(不叠成楼梯)
     var i, y0, u, spanI;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
@@ -230,7 +231,7 @@
       u = (y0 + mh/2)/mh; spanI = (wBot + (wTop-wBot)*u) * 0.9;   // 该片所在高度的梯形宽度
       s.position.set(0, y0, 0);                        // 居中·不错层(消除楼梯感)
       s.userData.chord = chord;                        // 给验证探针用
-      s.add(makeSlat(spanI, chord, 0.012, MAT.slat));  // 薄平片
+      s.add(makeSlat(spanI, chord, 0.013, MAT.slat));  // 薄平片
       g.add(s); slats.push(s);
     }
     return { g:g, slats:slats };
@@ -282,7 +283,13 @@
   dom.addEventListener('wheel', function(e){ e.preventDefault(); camDist = Math.max(0.8, Math.min(7, camDist + (e.deltaY>0?0.25:-0.25))); }, {passive:false});
 
   function overview(){ camDist=3.4; camY=1.0; tgtX=0; tgtY=0.6; tgtZ=0; }
-  function focusIntake(){ rotY=-0.5; rotX=0.05; camDist=1.75; camY=0.95; tgtX=0.02; tgtY=0.88; tgtZ=0.50; }
+  // 进气口特写:3/4 侧前角度对准右鳃口当前世界位置(吸附后位置随车体而定,故动态读取)
+  function focusIntake(){
+    rotY=-1.0; rotX=0.12; camDist=1.45; camY=0.92;
+    pivot.rotation.set(rotX, rotY, 0); pivot.updateMatrixWorld(true);
+    var p=new T.Vector3(); if(intakes[1]) intakes[1].g.getWorldPosition(p);
+    tgtX=p.x; tgtY=p.y||0.83; tgtZ=p.z;
+  }
 
   // ---- 滑杆 / 自动 / 视角 ----
   var speed = document.getElementById('speed'), out = document.getElementById('out');
@@ -309,27 +316,67 @@
     bb.setFromObject(o); sz=bb.getSize(new T.Vector3()); var c=bb.getCenter(new T.Vector3());
     o.position.x-=c.x; o.position.z-=c.z; o.position.y+=(sz.y/2-c.y); // 居中并落到地面
   }
-  // 鳃口在真车(sports_bike)整流罩上的落位(浏览器实测调出)
-  var GILL_ON_BIKE = { iy:0.80, iz:0.76, scale:0.46, spread:0.165, ry:0.5 };
-  function placeGillsOnBike(){ var g=GILL_ON_BIKE;
-    intakes[0].g.position.set(-g.spread,0,0); intakes[1].g.position.set(g.spread,0,0);
-    intakes[0].g.rotation.y=-g.ry; intakes[1].g.rotation.y=g.ry;   // 左 -·右 +(各自朝外)
-    intakeRig.position.set(0,g.iy,g.iz); intakeRig.scale.setScalar(g.scale);
+  // 鳃口落位:射线吸附到车体外表面(robust·换车型自动贴合,杜绝埋进车壳被遮挡)
+  //   ay/az = 在车体上的瞄准高度/前后(bike-local·侧整流罩颊面);scale=口径;proud=离表面外凸量(防 z-fight)
+  //   spread/ry = 无模型(占位体块)时的兜底相对落位
+  var GILL_ON_BIKE = { ay:0.87, az:0.72, scale:0.56, proud:0.006, spread:0.25, ry:0.6 };
+  function snapGillsToModel(){
+    var g = GILL_ON_BIKE;
+    var meshes = []; modelGroup.traverse(function(o){ if(o.isMesh) meshes.push(o); });
+    // 在稳定(未旋转)帧里吸附:临时把 orbit 旋转归零,量到的就是 bike-local 坐标
+    var ry0 = pivot.rotation.y, rx0 = pivot.rotation.x;
+    pivot.rotation.set(0,0,0); pivot.updateMatrixWorld(true);
+    intakeRig.position.set(0,0,0); intakeRig.scale.setScalar(1); intakeRig.rotation.set(0,0,0);
+    var rc = new T.Raycaster(); rc.far = 4;
+    var zAxis = new T.Vector3(0,0,1), k, sx, iv, hits, h, hit;
+    for(k=0;k<2;k++){ sx = (k===0?-1:1); iv = intakes[k].g;
+      rc.set(new T.Vector3(sx*2, g.ay, g.az), new T.Vector3(-sx,0,0));      // 从车外水平射向中线
+      hits = meshes.length ? rc.intersectObjects(meshes, true) : [];
+      hit = null;                                                          // 跳过玻璃/风挡,取第一处实体车壳
+      for(h=0; h<hits.length; h++){ var nm=(hits[h].object.name||'').toLowerCase();
+        if(nm.indexOf('glass')>=0 || nm.indexOf('screen')>=0 || nm.indexOf('windshield')>=0) continue; hit = hits[h]; break; }
+      if(!hit && hits.length) hit = hits[0];
+      if(hit){
+        var p = hit.point.clone();
+        // 取车体表面法线,但**压平 Y 分量** → 开口只朝侧/前(水平),叶片保持水平;
+        // 不直接用生法线:低模整流罩三角面法线常带强下倾,会让开口朝下、从侧面看成"贴块"。
+        var nf = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new T.Vector3(sx,0,0);
+        nf.y = 0; if(nf.lengthSq() < 1e-4) nf.set(sx,0,0); nf.normalize();
+        if(nf.x*sx < 0) nf.multiplyScalar(-1);                             // 统一取朝外(各自一侧)
+        iv.scale.setScalar(g.scale);
+        iv.quaternion.setFromUnitVectors(zAxis, nf);                       // 开口(局部+Z)对齐水平外法线 → 贴合曲面侧倾
+        iv.position.copy(p).addScaledVector(nf, g.proud);                  // 坐落表面·略外凸防 z-fight
+      } else {                                                             // 兜底:无模型(占位体块)时旧式相对落位
+        iv.scale.setScalar(g.scale); iv.rotation.set(0, sx*g.ry, 0); iv.position.set(sx*g.spread, g.ay, g.az);
+      }
+    }
+    pivot.rotation.set(rx0, ry0, 0); pivot.updateMatrixWorld(true);
   }
-  function showModel(s3){ while(modelGroup.children.length) modelGroup.remove(modelGroup.children[0]); modelGroup.add(s3); fitModel(s3); setPlaceholder(false); placeGillsOnBike(); status('已加载真车模型 Sports Bike(CC-BY·Futurealiti)·鳃口已落位'); }
+  // 实时微调用(浏览器里调,免重载):__snap(ay,az,scale,proud)
+  window.__snap = function(ay,az,scale,proud){
+    if(ay!==undefined)GILL_ON_BIKE.ay=ay; if(az!==undefined)GILL_ON_BIKE.az=az;
+    if(scale!==undefined)GILL_ON_BIKE.scale=scale; if(proud!==undefined)GILL_ON_BIKE.proud=proud;
+    snapGillsToModel(); return GILL_ON_BIKE;
+  };
+  // 临时:在 bike-local(归零旋转)帧里探测某 (y,z) 两侧整流罩外表面命中+法线(找落位锚点用,稳定后删)
+  window.__rayProbe = function(y,z){
+    var ry0=pivot.rotation.y, rx0=pivot.rotation.x; pivot.rotation.set(0,0,0); pivot.updateMatrixWorld(true);
+    var meshes=[]; modelGroup.traverse(function(o){ if(o.isMesh) meshes.push(o); });
+    var out=[]; [-1,1].forEach(function(sx){ var rc=new T.Raycaster(new T.Vector3(sx*2,y,z), new T.Vector3(-sx,0,0)); rc.far=4;
+      var h=rc.intersectObjects(meshes,true), hit=null,i; for(i=0;i<h.length;i++){ var nm=(h[i].object.name||'').toLowerCase(); if(nm.indexOf('glass')>=0||nm.indexOf('screen')>=0){continue;} hit=h[i]; break; }
+      if(hit){ var n=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize():new T.Vector3(sx,0,0);
+        out.push({sx:sx, hitX:+hit.point.x.toFixed(3), nx:+n.x.toFixed(2), ny:+n.y.toFixed(2), nz:+n.z.toFixed(2), mesh:(hit.object.name||'?').replace('carpaint_body_','').slice(0,8)});
+      } else out.push({sx:sx, miss:true}); });
+    pivot.rotation.set(rx0,ry0,0); pivot.updateMatrixWorld(true); return out;
+  };
+  function showModel(s3){ while(modelGroup.children.length) modelGroup.remove(modelGroup.children[0]); modelGroup.add(s3); fitModel(s3); setPlaceholder(false); snapGillsToModel(); status('已加载真车模型 Sports Bike(CC-BY·Futurealiti)·鳃口已吸附落位'); }
   if(loader){
     stage.addEventListener('dragover', function(e){ e.preventDefault(); });
     stage.addEventListener('drop', function(e){ e.preventDefault(); var f=e.dataTransfer&&e.dataTransfer.files[0]; if(!f) return; status('加载中…'); var r=new FileReader(); r.onload=function(){ try{ loader.parse(r.result,'',function(g){ showModel(g.scene); }, function(){ status('解析失败:不是有效 .glb/.gltf'); }); }catch(err){ status('解析出错'); } }; r.readAsArrayBuffer(f); });
     var mu=new URLSearchParams(location.search).get('model') || '/res/sports_bike/scene.gltf'; status('加载中…'); loader.load(mu, function(g){ showModel(g.scene); }, null, function(){ status('加载失败:'+mu); });
   } else { status('GLTFLoader 未就绪(需联网)'); }
 
-  // 进气口落位助手(换真车后用:整体高度/前后/大小/左右间距)
-  window.__placeGills = function(iy, iz, scale, spread, ry){
-    intakes[0].g.position.set(-spread, 0, 0); intakes[1].g.position.set(spread, 0, 0);
-    if(ry!==undefined){ intakes[0].g.rotation.y = -ry; intakes[1].g.rotation.y = ry; }
-    intakeRig.position.set(0, iy, iz); intakeRig.scale.setScalar(scale);
-    return {iy:iy, iz:iz, scale:scale, spread:spread, ry:ry};
-  };
+  // 进气口落位实时微调:见上 window.__snap(ay,az,scale,proud)（射线吸附后用它在浏览器里调）
   window.__modelBox = function(){ var b=new T.Box3().setFromObject(modelGroup); var s=b.getSize(new T.Vector3()); return {min:[+b.min.x.toFixed(2),+b.min.y.toFixed(2),+b.min.z.toFixed(2)], max:[+b.max.x.toFixed(2),+b.max.y.toFixed(2),+b.max.z.toFixed(2)], size:[+s.x.toFixed(2),+s.y.toFixed(2),+s.z.toFixed(2)]}; };
 
   // 调试:右进气口在当前特写下的屏幕归一化坐标(用于对中)
