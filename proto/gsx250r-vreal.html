@@ -61,7 +61,7 @@
   </div>
   <div class="mhint">真车模型:<span id="mstatus">未加载（当前为占位体块）</span> · 把 <b>.glb / .gltf</b> 文件<b>拖进上方画面</b>即加载,或用 <code>?model=URL</code> · 滚轮缩放</div>
   <p class="note">
-    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧鳃口落在<b>车身侧板(车把下整流罩)</b>上、<b>开口朝车头迎风</b>;百叶由<b>同一个自由度</b>联动:低速<b>齐平闭合</b>封口,随车速<b>张开露缝</b>(全速叶片转平、缝最大)。固定框承受风载。<br>
+    <b>动态造型件;迎风纳气,有附带温和气流 / 散热收益。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧鳃口落在<b>车身侧板(车把下整流罩)</b>上、<b>开口朝车头迎风</b>;百叶由<b>同一个自由度</b>联动:低速<b>齐平闭合</b>封口,随车速<b>张开露缝</b>(全速叶片转平、缝最大)。固定框承受风载。<br>
     <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):气流绕过车体;<b>迎风口张开时把迎面气流「纳入」开口</b>(暖色流线弯入口、粒子被吸入·开度越大越强),闭合时齐平掠过——像<b>张鳃呼吸</b>,仅作<b>机制演示</b>,非性能验证。<br>
     <b>车身 = 真实 3D 模型</b>(默认加载 <code>res/sports_bike</code>;鳃口已落到<b>车身侧板</b>、开口朝车头迎风)。换车型可拖入别的 <b>.glb/.gltf</b> 或 <code>?model=URL</code>。GSX250R 真实尺寸底本见 <code>docs/gsx250r-reference.md</code>;约束见 <code>docs/charter.md</code>。<br>
     <span style="opacity:.7">车体模型:"Sports Bike" by <b>Futurealiti</b> — <a href="https://sketchfab.com/3d-models/sports-bike-a80259b859c842d5824c25c61e0fc421" style="color:#7fb3ff">Sketchfab</a>,授权 <b>CC-BY-4.0</b>(仅作占位演示·非 Suzuki 官方车型)。</span>
@@ -220,7 +220,7 @@
   // 调参常量:百叶张合角度(度)。**负角=绕上缘铰链转、下缘向外掀**;0°竖直封口 → -90°水平羽化。
   // 物理(owner 选 B「高速低阻」):全速 -90° 叶片**顺气流=羽化→最小阻力、不导流**;中途(~-45°)才短暂偏流。
   var SLAT_CLOSED_DEG = 0;    // 初始(0 km/h):叶片**竖直封口**(挡住喉道)
-  var SLAT_OPEN_DEG   = -55;  // 全速:叶片转到**斜开露缝(不到水平·避免正前看成侧棱"消失")= 通风可见**
+  var SLAT_OPEN_DEG   = -90;  // 全速:叶片转到**水平放平(调平)= 通风;此时正前看成侧棱属正常开启态**
   var SLAT_N = 5;             // 阿普利亚"五元素格栅"=5 薄片
 
   // 平薄片(thin box·有厚度·绕中心转:竖直闭合 ↔ 水平放平,开合两端都基本贴面)
@@ -242,21 +242,15 @@
 
   // 单个进气口(MotoGP 导气口语言:一体式碳罩 + NACA 漏斗喉壁 + 中央分隔双槽 + 上下盖条 + 5 薄片 + 霁青唇沿 + 旁置 strake):
   // 局部 +Z = 开口朝车头(迎风);span 沿局部 X;百叶绕局部 X 联动;后侧通透(气流穿叶入车体)
-  // 解耦:mw/mh=大外壳前脸尺寸(侧面看大箱);迎风百叶口=壳前脸中间一个小开口(缩减)
+  // mw/mh=前脸口框尺寸;迎风百叶口=直边圆角矩形 + 5 完整百叶;后接葫芦形扩压进气道
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
     var fd = 0.2;                                          // 进气道前后深度(侧面看的"宽度")
-    var fz = 0.012, hw = mw/2, hh = mh/2;                  // 框半宽/半高
-    var mwM = mw*0.9, mhM = mh*0.86;                       // 迎风口尺寸
-    var hwM = mwM/2, hhM = mhM/2;
-    var slant = mhM*0.30, rh = mhM - slant*2;             // 斜边量;rh=右端短高(楔形:左满高、右渐短)
-    var tbar = 0.013, dpb = 0.03;                          // 框条厚·浅前后深
-    // —— 楔形前脸框(左竖满高 / 右竖短高 / 上缘左上→右下 / 下缘左下→右上) = 4 根框条 ——
-    g.add(at(box(tbar, mhM, dpb, MAT.frame), -hwM, 0, fz-0.004));   // 左竖(满高)
-    g.add(at(box(tbar, rh,  dpb, MAT.frame),  hwM, 0, fz-0.004));   // 右竖(短高)
-    var barLen = Math.hypot(mwM, slant), aTop = Math.atan2(-slant, mwM), aBot = Math.atan2(slant, mwM);
-    var topBar = at(box(barLen, tbar, dpb, MAT.frame), 0,  hhM-slant/2, fz-0.004); topBar.rotation.z = aTop; g.add(topBar);
-    var botBar = at(box(barLen, tbar, dpb, MAT.frame), 0, -hhM+slant/2, fz-0.004); botBar.rotation.z = aBot; g.add(botBar);
+    var fz = 0.012, hw = mw/2, hh = mh/2;
+    var mwM = mw*0.9, mhM = mh*0.86, hwM = mwM/2, hhM = mhM/2;
+    var tBig = (mw-mwM)/2;
+    // —— 直边圆角矩形前脸口框(carbon) ——
+    var shell = trapRing(mwM, mwM*0.94, mhM, tBig, 0.03, MAT.frame); shell.position.set(0,0,-0.008); g.add(shell);
     // —— 葫芦形进气道:四面 carbon 壁·前窄后宽(bs>1=diffuser 扩压·气动正解·非喷管) ——
     var bs = 1.5, fdep = fd, wAvg = (1+bs)/2;
     var dyT = hhM*(1-bs), lenT = Math.hypot(fdep, dyT), aT = Math.atan2(dyT, fdep);
@@ -267,43 +261,42 @@
     var rW = box(0.012, mhM*wAvg, lenS, MAT.frame); rW.position.set( hwM-dxS/2, 0, -fdep/2); rW.rotation.y =  aS; g.add(rW);
     // —— 后端宽封口环(葫芦尾·收束扩压段) ——
     g.add(at(trapRing(mwM*bs, mwM*bs*0.96, mhM*bs, 0.012, 0.012, MAT.frame), 0, 0, -fd));
-    // —— 楔形霁青描边(沿 4 框条·细) ——
-    var ac = 0.005;
-    g.add(at(box(ac, mhM, 0.006, MAT.accent), -hwM, 0, fz+0.014));
-    g.add(at(box(ac, rh,  0.006, MAT.accent),  hwM, 0, fz+0.014));
-    var acT = at(box(barLen, ac, 0.006, MAT.accent), 0,  hhM-slant/2, fz+0.014); acT.rotation.z = aTop; g.add(acT);
-    var acB = at(box(barLen, ac, 0.006, MAT.accent), 0, -hhM+slant/2, fz+0.014); acB.rotation.z = aBot; g.add(acB);
-    // —— 变长联动百叶(5 片·填楔形:中段满长、上下渐短靠左·右缘贴斜边) ——
-    var span2 = hhM*0.84, chord = (2*span2/SLAT_N)*0.8, leftX = -hwM+tbar, i, y0, xr, span, cx;
+    // —— 直边霁青描边(一圈细线) ——
+    g.add(at(trapRing(mwM, mwM*0.94, mhM, 0.004, 0.006, MAT.accent), 0, 0, fz+0.016));
+    // —— 上/下静态盖条(框出 louvre bank) ——
+    var capH = mhM*0.10;
+    g.add(at(box(mwM*0.9, capH, 0.02, MAT.frame), 0,  hhM-capH*0.5, fz));
+    g.add(at(box(mwM*0.9, capH, 0.02, MAT.frame), 0, -hhM+capH*0.5, fz));
+    // —— 5 完整联动百叶(等长·绕中心转·满速放平通风) ——
+    var inner = mhM - capH*2, chord = (inner/SLAT_N)*0.82, span = mwM*0.86, i, y0;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
-      y0 = span2 - (2*span2)*(i+0.5)/SLAT_N;
-      xr = (y0>=0) ? (-hwM + (hhM - y0)*mwM/slant) : (-hwM + (y0 + hhM)*mwM/slant);   // 右缘随斜边收
-      xr = Math.min(hwM - tbar, xr);
-      span = Math.max(0.012, xr - leftX); cx = (leftX + xr)/2;
-      s.position.set(cx, y0, fz); s.userData.chord = chord;
+      y0 = inner/2 - inner/SLAT_N*(i+0.5);
+      s.position.set(0, y0, fz); s.userData.chord = chord;
       s.add(makeSlat(span, chord, 0.009, MAT.slat));
       g.add(s); slats.push(s);
     }
-    // —— 两侧 strake(壳外缘·后缘锯齿 KTM·位置随口面自适应)+ L 端板 ——
-    var ss, fin, fg;
+    // —— 附件:全部贴紧口框前脸(不悬空·不深探入风道) ——
+    var ss;
+    // winglet(紧贴口顶 + 两端翼端板)
+    var wing = box(mwM*1.06, 0.012, 0.05, MAT.frame); wing.position.set(0, hhM+0.013, fz+0.004); wing.rotation.x = -0.12; g.add(wing);
+    for(ss=-1; ss<=1; ss+=2) g.add(at(box(0.008, 0.026, 0.045, MAT.frame), ss*mwM*0.5, hhM+0.016, fz+0.004));
+    // strake(紧贴口侧·竖鳍后缘锯齿 KTM + L 端板)
+    var fin, fg;
     for(ss=-1; ss<=1; ss+=2){
-      fin = serratedFin(fd*0.5, mh*0.82, 0.007, 5, fd*0.06, MAT.frame);
+      fin = serratedFin(0.05, mhM*0.94, 0.007, 5, 0.01, MAT.frame);
       fg = new T.Group(); fg.add(fin);
-      fg.position.set(ss*(hw + mw*0.06), 0, fz-fd*0.25); fg.rotation.y = ss*0.16; g.add(fg);
-      fg.add(at(box(0.026, 0.006, fd*0.4, MAT.frame), ss*mw*0.08, mh*0.43, fz-fd*0.1));
+      fg.position.set(ss*(hwM+0.007), 0, fz-0.006); fg.rotation.y = ss*0.14; g.add(fg);
+      fg.add(at(box(0.022, 0.006, 0.04, MAT.frame), ss*0.008, mhM*0.46, 0.02));
     }
-    // —— winglet(顶·横向薄翼 + 两端翼端板·位置随口面自适应) ——
-    var wing = box(mw*0.78, 0.01, fd*0.5, MAT.frame); wing.position.set(0, hh + mh*0.24, fz-fd*0.1); wing.rotation.x = -0.12; g.add(wing);
-    for(ss=-1; ss<=1; ss+=2) g.add(at(box(0.008, 0.032, fd*0.4, MAT.frame), ss*mw*0.38, hh + mh*0.3, fz-fd*0.1));
-    // —— gurney lip(底·地效台阶·位置随口面自适应) ——
-    var gurney = box(mw*0.92, 0.009, fd*0.3, MAT.frame); gurney.position.set(0, -hh - mh*0.04, fz-fd*0.04); gurney.rotation.x = 0.25; g.add(gurney);
+    // gurney lip(紧贴口底·地效台阶示意)
+    var gurney = box(mwM*1.0, 0.009, 0.03, MAT.frame); gurney.position.set(0, -hhM-0.011, fz+0.008); gurney.rotation.x = 0.25; g.add(gurney);
     // 部件标注锚点(局部坐标·给 HTML 标签投影用)
     var markers = {
-      winglet: new T.Vector3(0, hh+mh*0.3, fz+0.02),
-      strake:  new T.Vector3(hw+0.02, -hh*0.2, fz+0.04),
-      gurney:  new T.Vector3(0, -hh-mh*0.05, fz+0.03),
-      louver:  new T.Vector3(-mw*0.18, 0, fz),
+      winglet: new T.Vector3(0, hhM+0.02, fz+0.02),
+      strake:  new T.Vector3(hwM+0.02, -hhM*0.3, fz+0.03),
+      gurney:  new T.Vector3(0, -hhM-0.015, fz+0.02),
+      louver:  new T.Vector3(-mwM*0.2, 0, fz),
       frame:   new T.Vector3(-hwM-0.005, hhM*0.5, fz+0.01)
     };
     return { g:g, slats:slats, markers:markers };
@@ -501,8 +494,8 @@
     if(!intakes[0]||!intakes[1]) return;
     scene.updateMatrixWorld(true);
     var t=new T.Vector3();
-    t.set(0,0,-0.10); intakes[0].g.localToWorld(t); flowGroup.worldToLocal(t); IL.copy(t);
-    t.set(0,0,-0.10); intakes[1].g.localToWorld(t); flowGroup.worldToLocal(t); IR.copy(t);
+    t.set(0,0,-0.07); intakes[0].g.localToWorld(t); flowGroup.worldToLocal(t); IL.copy(t);
+    t.set(0,0,-0.07); intakes[1].g.localToWorld(t); flowGroup.worldToLocal(t); IR.copy(t);
   }
   var _d=new T.Vector3(), _v=new T.Vector3(), _p=new T.Vector3();
   function fieldVel(p, openFrac, out){
@@ -512,8 +505,8 @@
     // 迎风口纳气(局部汇):开度越大、离口越近,迎面气流被吸入越强 → 上游流线弯入口(视觉呼吸·非真穿流)
     var draw = Math.max(0, Math.min(1, openFrac));
     if(draw > 0.001){
-      _d.copy(IL).sub(p); var g=Math.exp(-_d.lengthSq()/0.08); out.addScaledVector(_d, draw*6.0*g);
-      _d.copy(IR).sub(p); g=Math.exp(-_d.lengthSq()/0.08);     out.addScaledVector(_d, draw*6.0*g);
+      _d.copy(IL).sub(p); var g=Math.exp(-_d.lengthSq()/0.11); out.addScaledVector(_d, draw*11.0*g);
+      _d.copy(IR).sub(p); g=Math.exp(-_d.lengthSq()/0.11);     out.addScaledVector(_d, draw*11.0*g);
     }
     if(p.y<0.02 && out.y<0) out.y=0;
     var l=out.length(); if(l>2.4) out.multiplyScalar(2.4/l);
@@ -549,7 +542,7 @@
   function updateParticles(openFrac){ var i, draw=Math.max(0,Math.min(1,openFrac));
     for(i=0;i<NP;i++){ _p.set(pPos[i*3],pPos[i*3+1],pPos[i*3+2]); fieldVel(_p,openFrac,_v); _p.addScaledVector(_v,0.02);
       var eaten = draw>0.05 && (_p.distanceTo(IL)<0.06 || _p.distanceTo(IR)<0.06);   // 被迎风口吸入→重生(视觉呼吸)
-      if(eaten||_p.z<-1.5||_p.y>2.2||_p.y<0) seedParticle(i); else { pPos[i*3]=_p.x;pPos[i*3+1]=_p.y;pPos[i*3+2]=_p.z; } }
+      if(eaten||_p.z<-1.5||_p.z>1.9||_p.y>2.2||_p.y<0||Math.abs(_p.x)>1.3) seedParticle(i); else { pPos[i*3]=_p.x;pPos[i*3+1]=_p.y;pPos[i*3+2]=_p.z; } }   // 全向边界重生(含 z>1.9 上界·根治被源推向前方飞失致密度枯竭)
     pGeo.attributes.position.needsUpdate=true;
   }
   // 风洞测试段框
