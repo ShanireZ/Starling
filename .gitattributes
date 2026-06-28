@@ -1,0 +1,11 @@
+# 文本默认统一为 LF(仓库与工作区一致),消除 Windows 上 LF↔CRLF 抖动(本机 autocrlf=true)
+* text=auto eol=lf
+
+# 3D 资源与图片:二进制,禁止任何 EOL / 编码转换(防 .bin/.glb/.gltf 字节损坏)
+*.glb    binary
+*.gltf   binary
+*.bin    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.webp   binary
