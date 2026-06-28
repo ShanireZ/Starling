@@ -33,7 +33,7 @@
 <body>
 <div class="wrap">
   <h1>Starling · GSX250R 电子百叶进气口（高仿真 v-real）</h1>
-  <p class="sub">车头两侧一对「鳃口」· 固定框 + 多片联动百叶 · 1 自由度 · 低速齐平闭合 / 高速前缘下斜张开</p>
+  <p class="sub">车身两侧侧板上一对「鳃口」迎风进气口 · 固定框 + 多片联动百叶 · 1 自由度 · 低速齐平闭合 / 高速张开露缝</p>
   <div id="stage"><div id="fallback">3D 加载失败（需要联网加载 three.js）。</div></div>
   <div class="row">
     <label for="speed">车速 / 开度</label>
@@ -55,9 +55,9 @@
   </div>
   <div class="mhint">真车模型:<span id="mstatus">未加载（当前为占位体块）</span> · 把 <b>.glb / .gltf</b> 文件<b>拖进上方画面</b>即加载,或用 <code>?model=URL</code> · 滚轮缩放</div>
   <p class="note">
-    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧百叶由<b>同一个自由度</b>联动:初始静止时叶片<b>竖直贴面</b>齐平封口;随车速张开,<b>全速时转到水平(顺气流 / 羽化)= 低阻通风口</b>(高速主打<b>低阻</b>,不追求下压力)。中途约 -45° 会短暂偏流上挑(过渡态)。固定框承受风载。<br>
-    <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):气流绕过车体;百叶中途偏流时流线被<b>上挑</b>(暖色),<b>全速放平后流线顺流穿过</b>(低阻)——仅作<b>机制演示</b>,非性能验证。<br>
-    <b>车身 = 真实 3D 模型</b>(默认加载 <code>res/sports_bike</code>;鳃口已落到前整流罩侧面)。换车型可拖入别的 <b>.glb/.gltf</b> 或 <code>?model=URL</code>。GSX250R 真实尺寸底本见 <code>docs/gsx250r-reference.md</code>;约束见 <code>docs/charter.md</code>。<br>
+    <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧鳃口落在<b>车身侧板(车把下整流罩)</b>上、<b>开口朝车头迎风</b>;百叶由<b>同一个自由度</b>联动:低速<b>齐平闭合</b>封口,随车速<b>张开露缝</b>(全速叶片转平、缝最大)。固定框承受风载。<br>
+    <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):气流绕过车体——仅作<b>机制演示</b>,非性能验证。<span style="opacity:.7">(注:流场仍按旧侧向方案绘制,迎风进气口版的流场待对齐。)</span><br>
+    <b>车身 = 真实 3D 模型</b>(默认加载 <code>res/sports_bike</code>;鳃口已落到<b>车身侧板</b>、开口朝车头迎风)。换车型可拖入别的 <b>.glb/.gltf</b> 或 <code>?model=URL</code>。GSX250R 真实尺寸底本见 <code>docs/gsx250r-reference.md</code>;约束见 <code>docs/charter.md</code>。<br>
     <span style="opacity:.7">车体模型:"Sports Bike" by <b>Futurealiti</b> — <a href="https://sketchfab.com/3d-models/sports-bike-a80259b859c842d5824c25c61e0fc421" style="color:#7fb3ff">Sketchfab</a>,授权 <b>CC-BY-4.0</b>(仅作占位演示·非 Suzuki 官方车型)。</span>
   </p>
 </div>
@@ -285,7 +285,7 @@
   function overview(){ camDist=3.4; camY=1.0; tgtX=0; tgtY=0.6; tgtZ=0; }
   // 进气口特写:3/4 侧前角度对准右鳃口当前世界位置(吸附后位置随车体而定,故动态读取)
   function focusIntake(){
-    rotY=-1.3; rotX=0.10; camDist=1.7; camY=0.80;
+    rotY=-0.5; rotX=0.10; camDist=1.7; camY=0.82;   // 前方 3/4:看进迎风开口
     pivot.rotation.set(rotX, rotY, 0); pivot.updateMatrixWorld(true);
     var p=new T.Vector3(); if(intakes[1]) intakes[1].g.getWorldPosition(p);
     tgtX=p.x; tgtY=p.y||0.75; tgtZ=p.z;
@@ -319,7 +319,8 @@
   // 鳃口落位:射线吸附到车体外表面(robust·换车型自动贴合,杜绝埋进车壳被遮挡)
   //   ay/az = 在车体上的瞄准高度/前后(bike-local·侧整流罩颊面);scale=口径;proud=离表面外凸量(防 z-fight)
   //   spread/ry = 无模型(占位体块)时的兜底相对落位
-  var GILL_ON_BIKE = { ay:0.64, az:0.53, scale:0.66, proud:0.006, spread:0.25, ry:0.6 };
+  // 开口朝向:owner 定「风口与车同向 = 开口朝车头(迎风)」→ 局部+Z 对齐车前(+Z),各侧再略向外张 cant
+  var GILL_ON_BIKE = { ay:0.68, az:0.49, scale:0.66, proud:0.006, cant:0.35, spread:0.25, ry:0.6 };
   function snapGillsToModel(){
     var g = GILL_ON_BIKE;
     var meshes = []; modelGroup.traverse(function(o){ if(o.isMesh) meshes.push(o); });
@@ -338,14 +339,15 @@
       if(!hit && hits.length) hit = hits[0];
       if(hit){
         var p = hit.point.clone();
-        // 取车体表面法线,但**压平 Y 分量** → 开口只朝侧/前(水平),叶片保持水平;
-        // 不直接用生法线:低模整流罩三角面法线常带强下倾,会让开口朝下、从侧面看成"贴块"。
+        // 面板外法线(压平 Y)——只用于"坐落在侧板表面上"的落位/外凸方向
         var nf = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new T.Vector3(sx,0,0);
         nf.y = 0; if(nf.lengthSq() < 1e-4) nf.set(sx,0,0); nf.normalize();
-        if(nf.x*sx < 0) nf.multiplyScalar(-1);                             // 统一取朝外(各自一侧)
+        if(nf.x*sx < 0) nf.multiplyScalar(-1);
+        // 开口朝向 = 车头(+Z·迎风),各侧再略向外张 cant → 迎风进气口(owner:风口与车同向=朝车头)
+        var face = new T.Vector3(sx*g.cant, 0, 1).normalize();
         iv.scale.setScalar(g.scale);
-        iv.quaternion.setFromUnitVectors(zAxis, nf);                       // 开口(局部+Z)对齐水平外法线 → 贴合曲面侧倾
-        iv.position.copy(p).addScaledVector(nf, g.proud);                  // 坐落表面·略外凸防 z-fight
+        iv.quaternion.setFromUnitVectors(zAxis, face);                     // 开口(局部+Z)朝车头迎风
+        iv.position.copy(p).addScaledVector(nf, g.proud);                  // 坐落侧板表面·略外凸防 z-fight
       } else {                                                             // 兜底:无模型(占位体块)时旧式相对落位
         iv.scale.setScalar(g.scale); iv.rotation.set(0, sx*g.ry, 0); iv.position.set(sx*g.spread, g.ay, g.az);
       }
@@ -353,21 +355,11 @@
     pivot.rotation.set(rx0, ry0, 0); pivot.updateMatrixWorld(true);
   }
   // 实时微调用(浏览器里调,免重载):__snap(ay,az,scale,proud)
-  window.__snap = function(ay,az,scale,proud){
+  window.__snap = function(ay,az,scale,proud,cant){
     if(ay!==undefined)GILL_ON_BIKE.ay=ay; if(az!==undefined)GILL_ON_BIKE.az=az;
     if(scale!==undefined)GILL_ON_BIKE.scale=scale; if(proud!==undefined)GILL_ON_BIKE.proud=proud;
+    if(cant!==undefined)GILL_ON_BIKE.cant=cant;
     snapGillsToModel(); return GILL_ON_BIKE;
-  };
-  // 临时:在 bike-local(归零旋转)帧里探测某 (y,z) 两侧整流罩外表面命中+法线(找落位锚点用,稳定后删)
-  window.__rayProbe = function(y,z){
-    var ry0=pivot.rotation.y, rx0=pivot.rotation.x; pivot.rotation.set(0,0,0); pivot.updateMatrixWorld(true);
-    var meshes=[]; modelGroup.traverse(function(o){ if(o.isMesh) meshes.push(o); });
-    var out=[]; [-1,1].forEach(function(sx){ var rc=new T.Raycaster(new T.Vector3(sx*2,y,z), new T.Vector3(-sx,0,0)); rc.far=4;
-      var h=rc.intersectObjects(meshes,true), hit=null,i; for(i=0;i<h.length;i++){ var nm=(h[i].object.name||'').toLowerCase(); if(nm.indexOf('glass')>=0||nm.indexOf('screen')>=0){continue;} hit=h[i]; break; }
-      if(hit){ var n=hit.face?hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize():new T.Vector3(sx,0,0);
-        out.push({sx:sx, hitX:+hit.point.x.toFixed(3), nx:+n.x.toFixed(2), ny:+n.y.toFixed(2), nz:+n.z.toFixed(2), mesh:(hit.object.name||'?').replace('carpaint_body_','').slice(0,8)});
-      } else out.push({sx:sx, miss:true}); });
-    pivot.rotation.set(rx0,ry0,0); pivot.updateMatrixWorld(true); return out;
   };
   function showModel(s3){ while(modelGroup.children.length) modelGroup.remove(modelGroup.children[0]); modelGroup.add(s3); fitModel(s3); setPlaceholder(false); snapGillsToModel(); status('已加载真车模型 Sports Bike(CC-BY·Futurealiti)·鳃口已吸附落位'); }
   if(loader){
@@ -408,21 +400,24 @@
   };
 
   // ============ 风洞气流可视化（示意流线 + 粒子·非 CFD 解算）============
-  // 启发式流场:① 来流 -Z ② 车体绕流(Rankine 源-汇:鼻锥出/尾部汇→流线绕过车体)
-  // ③ 百叶上导(每侧进气口处局部上向速度,随开度增强)→ 如实呈现"迎面风被向上导出=下压力"。
+  // 启发式流场:① 来流 -Z(车头→车尾) ② 车体绕流(Rankine 源-汇:鼻锥出/尾部汇→流线绕过车体)
+  // ③ 迎风口纳气:开度越大,每侧**朝车头的开口**把迎面气流「纳入」(局部汇)越强 → 上游流线弯入口
+  //    = 视觉「张鳃呼吸」(借观感·非真穿流·非性能验证);闭合时无纳气、气流齐平掠过。
   var flowGroup = new T.Group(); flowGroup.visible=false; pivot.add(flowGroup);
   var U_WIND=1.0, M_BODY=0.16;
   var SRC=new T.Vector3(0,0.45,0.95), SNK=new T.Vector3(0,0.60,-0.95);
-  var IL=new T.Vector3(-0.27,0.90,0.50), IR=new T.Vector3(0.27,0.90,0.50);
+  var IL=new T.Vector3(-0.15,0.68,0.55), IR=new T.Vector3(0.29,0.68,0.55);   // 两侧迎风口(开口朝车头)位置
   var _d=new T.Vector3(), _v=new T.Vector3(), _p=new T.Vector3();
   function fieldVel(p, openFrac, out){
     out.set(0,0,-U_WIND);
-    // 偏流强度:叶片角 0°(竖直封口)与 90°(水平羽化)都 ≈0,~45° 最大 → 全速放平=不导流(低阻)
-    var defl = Math.sin(Math.max(0,Math.min(1,openFrac))*Math.PI);
     _d.copy(p).sub(SRC); var r=_d.length()+0.05; out.addScaledVector(_d,  M_BODY/(r*r*r));
     _d.copy(p).sub(SNK); r=_d.length()+0.05; out.addScaledVector(_d, -M_BODY/(r*r*r));
-    _d.copy(p).sub(IL); var g=Math.exp(-_d.lengthSq()/0.05); out.y += defl*1.8*g; out.x -= defl*0.6*g;
-    _d.copy(p).sub(IR); g=Math.exp(-_d.lengthSq()/0.05);     out.y += defl*1.8*g; out.x += defl*0.6*g;
+    // 迎风口纳气(局部汇):开度越大、离口越近,迎面气流被吸入越强 → 上游流线弯入口(视觉呼吸·非真穿流)
+    var draw = Math.max(0, Math.min(1, openFrac));
+    if(draw > 0.001){
+      _d.copy(IL).sub(p); var g=Math.exp(-_d.lengthSq()/0.08); out.addScaledVector(_d, draw*4.5*g);
+      _d.copy(IR).sub(p); g=Math.exp(-_d.lengthSq()/0.08);     out.addScaledVector(_d, draw*4.5*g);
+    }
     if(p.y<0.02 && out.y<0) out.y=0;
     var l=out.length(); if(l>2.4) out.multiplyScalar(2.4/l);
     return out;
@@ -436,13 +431,15 @@
     var ln=new T.Line(geo, new T.LineBasicMaterial({color:0x9fd0ff, transparent:true, opacity:0.5}));
     flowGroup.add(ln); streamLines.push(ln); } })();
   function rebuildStreamlines(openFrac){
-    var i,s,pos,maxUp,f;
-    for(i=0;i<streamLines.length;i++){ _p.copy(STREAM_SEEDS[i]); pos=streamLines[i].geometry.attributes.position.array; maxUp=0;
+    var i,s,pos,minD,f,dmin;
+    for(i=0;i<streamLines.length;i++){ _p.copy(STREAM_SEEDS[i]); pos=streamLines[i].geometry.attributes.position.array; minD=9;
       for(s=0;s<80;s++){ pos[s*3]=_p.x; pos[s*3+1]=_p.y; pos[s*3+2]=_p.z;
-        fieldVel(_p,openFrac,_v); if(_v.y>maxUp) maxUp=_v.y; _v.normalize().multiplyScalar(0.045); _p.add(_v);
-        if(_p.z<-1.5||_p.y>2.2){ for(f=s+1;f<80;f++){ pos[f*3]=_p.x;pos[f*3+1]=_p.y;pos[f*3+2]=_p.z; } break; } }
+        dmin=Math.min(_p.distanceTo(IL), _p.distanceTo(IR)); if(dmin<minD) minD=dmin;
+        if(dmin<0.05){ for(f=s+1;f<80;f++){ pos[f*3]=_p.x;pos[f*3+1]=_p.y;pos[f*3+2]=_p.z; } break; }   // 被纳入开口→止于口
+        fieldVel(_p,openFrac,_v); _v.normalize().multiplyScalar(0.045); _p.add(_v);
+        if(_p.z<-1.5||_p.y>2.2||_p.y<0.02){ for(f=s+1;f<80;f++){ pos[f*3]=_p.x;pos[f*3+1]=_p.y;pos[f*3+2]=_p.z; } break; } }
       streamLines[i].geometry.attributes.position.needsUpdate=true;
-      streamLines[i].material.color.setHex(maxUp>0.6 ? 0xff8a3d : 0x9fd0ff);
+      streamLines[i].material.color.setHex((openFrac>0.05 && minD<0.14) ? 0xff8a3d : 0x9fd0ff);   // 暖色=被迎风口纳入
     }
   }
   // 流动粒子(live 烟流)
@@ -452,9 +449,10 @@
   var pGeo=new T.BufferGeometry(); pGeo.setAttribute('position', new T.BufferAttribute(pPos,3));
   var points=new T.Points(pGeo, new T.PointsMaterial({color:0xdcebff, size:0.016, transparent:true, opacity:0.6, depthWrite:false}));
   flowGroup.add(points);
-  function updateParticles(openFrac){ var i;
+  function updateParticles(openFrac){ var i, draw=Math.max(0,Math.min(1,openFrac));
     for(i=0;i<NP;i++){ _p.set(pPos[i*3],pPos[i*3+1],pPos[i*3+2]); fieldVel(_p,openFrac,_v); _p.addScaledVector(_v,0.02);
-      if(_p.z<-1.5||_p.y>2.2||_p.y<0) seedParticle(i); else { pPos[i*3]=_p.x;pPos[i*3+1]=_p.y;pPos[i*3+2]=_p.z; } }
+      var eaten = draw>0.05 && (_p.distanceTo(IL)<0.06 || _p.distanceTo(IR)<0.06);   // 被迎风口吸入→重生(视觉呼吸)
+      if(eaten||_p.z<-1.5||_p.y>2.2||_p.y<0) seedParticle(i); else { pPos[i*3]=_p.x;pPos[i*3+1]=_p.y;pPos[i*3+2]=_p.z; } }
     pGeo.attributes.position.needsUpdate=true;
   }
   // 风洞测试段框
@@ -465,10 +463,10 @@
   function setFlow(v){ flowOn=v; flowGroup.visible=v; if(flowBtn) flowBtn.textContent=v?'🌫 风洞:开':'🌫 风洞气流'; if(v) _lastOpen=-1; }
   if(flowBtn) flowBtn.addEventListener('click', function(){ setFlow(!flowOn); });
 
-  // 验证:右进气口上游种一条流线,返回其最高 y(开比闭应更高 = 百叶把流线上导)
-  window.__starlingFlowCheck = function(openFrac){ _p.set(0.27,0.78,1.3); var maxY=_p.y,s;
-    for(s=0;s<160;s++){ fieldVel(_p,openFrac,_v); _v.normalize().multiplyScalar(0.03); _p.add(_v); if(_p.y>maxY)maxY=_p.y; if(_p.z<-1.4)break; }
-    return { openFrac:openFrac, maxY:+maxY.toFixed(3), endZ:+_p.z.toFixed(2) }; };
+  // 验证:右迎风口上游种一条流线,返回其与开口的最近距离(开比闭应更小 = 被纳入开口)
+  window.__starlingFlowCheck = function(openFrac){ _p.set(0.29,0.72,1.3); var minD=9,s,d;
+    for(s=0;s<240;s++){ d=_p.distanceTo(IR); if(d<minD)minD=d; if(d<0.05)break; fieldVel(_p,openFrac,_v); _v.normalize().multiplyScalar(0.025); _p.add(_v); if(_p.z<-1.4)break; }
+    return { openFrac:openFrac, minDistToIntake:+minD.toFixed(3), endZ:+_p.z.toFixed(2) }; };
 
   window.addEventListener('resize', function(){ W=stage.clientWidth||920; renderer.setSize(W,H); cam.aspect=W/H; cam.updateProjectionMatrix(); });
 
