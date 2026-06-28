@@ -244,7 +244,7 @@
   // 局部 +Z = 开口朝车头(迎风);span 沿局部 X;百叶绕局部 X 联动;后侧通透(气流穿叶入车体)
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
-    var wTop = mw*0.92, wBot = mw, t = 0.015, fd = 0.06;   // t=罩壁厚(变薄至一半 0.03→0.015);fd=管深(略减)
+    var wTop = mw*0.92, wBot = mw, t = 0.015, fd = 0.3;    // t=罩壁厚(薄);fd=外壳前后深度(加大→侧面看是大壳体·开口仍朝前)
     var fz = 0.012, hw = mw/2, hh = mh/2;
     // —— 一体式外罩 = 一根深挤出圆角梯形管(前缘小倒角=唇·内壁=喉壁·后侧通透·从唇到喉一片碳壳) ——
     var shell = trapRing(wTop, wBot, mh, t, fd, MAT.frame); shell.position.set(0,0,-fd*0.8); g.add(shell);
@@ -382,7 +382,7 @@
   //   ay/az = 在车体上的瞄准高度/前后(bike-local·侧整流罩颊面);scale=口径;proud=离表面外凸量(防 z-fight)
   //   spread/ry = 无模型(占位体块)时的兜底相对落位
   // 开口朝向:owner 定「风口与车同向 = 开口朝车头(迎风)」→ 局部+Z 对齐车前(+Z),各侧再略向外张 cant
-  var GILL_ON_BIKE = { ay:0.78, az:0.52, scale:0.66, proud:0.006, cant:0.0, spread:0.25, ry:0.6 };  // 上移到 SUPERSPORT 上方·cant=0 正面朝车头
+  var GILL_ON_BIKE = { ay:0.78, az:0.52, scale:0.9, proud:0.006, cant:0.0, spread:0.25, ry:0.6 };  // scale 放大到绿框尺寸·cant=0 正面朝车头
   function snapGillsToModel(){
     var g = GILL_ON_BIKE;
     var meshes = []; modelGroup.traverse(function(o){ if(o.isMesh) meshes.push(o); });
@@ -405,7 +405,7 @@
         var nf = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new T.Vector3(sx,0,0);
         nf.y = 0; if(nf.lengthSq() < 1e-4) nf.set(sx,0,0); nf.normalize();
         if(nf.x*sx < 0) nf.multiplyScalar(-1);
-        // 开口朝向 = 车头(+Z·迎风),各侧再略向外张 cant → 迎风进气口(owner:风口与车同向=朝车头)
+        // 开口朝向 = 车头正前方迎风(局部+Z=车前);外壳沿前后(局部 -Z=车尾向)加深 → 正面看迎风百叶口、侧面看大壳体(双视图同时满足)
         var face = new T.Vector3(sx*g.cant, 0, 1).normalize();
         iv.scale.setScalar(g.scale);
         iv.quaternion.setFromUnitVectors(zAxis, face);                     // 开口(局部+Z)朝车头迎风
