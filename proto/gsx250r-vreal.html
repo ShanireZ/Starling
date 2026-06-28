@@ -270,16 +270,16 @@
     // —— 两侧对称竖向 strake(壳体外缘·后缘锯齿 KTM)+ L 形翼端板 ——
     var ss, fin, fg;
     for(ss=-1; ss<=1; ss+=2){
-      fin = serratedFin(0.07, mh*0.82, 0.007, 5, 0.012, MAT.frame);
+      fin = serratedFin(fd*0.5, mh*0.82, 0.007, 5, fd*0.06, MAT.frame);   // 弦长随进气道深度自适应
       fg = new T.Group(); fg.add(fin);
-      fg.position.set(ss*(hw+0.012), 0, fz+0.006); fg.rotation.y = ss*0.16; g.add(fg);
-      fg.add(at(box(0.026, 0.006, 0.05, MAT.frame), ss*0.011, mh*0.43, 0.02));
+      fg.position.set(ss*(hw+0.012), 0, fz-fd*0.25); fg.rotation.y = ss*0.16; g.add(fg);   // 沿进气道前后铺
+      fg.add(at(box(0.026, 0.006, fd*0.4, MAT.frame), ss*0.011, mh*0.43, fz-fd*0.1));
     }
-    // —— 上方 winglet(壳体顶·横向薄翼 + 两端翼端板) ——
-    var wing = box(mw*0.78, 0.01, 0.055, MAT.frame); wing.position.set(0, hh+0.042, fz+0.02); wing.rotation.x = -0.12; g.add(wing);
-    for(ss=-1; ss<=1; ss+=2) g.add(at(box(0.008, 0.032, 0.05, MAT.frame), ss*mw*0.38, hh+0.05, fz+0.02));
-    // —— 下缘 gurney lip(壳体底·地效台阶示意) ——
-    var gurney = box(mw*0.92, 0.009, 0.03, MAT.frame); gurney.position.set(0, -hh-0.006, fz+0.022); gurney.rotation.x = 0.25; g.add(gurney);
+    // —— 上方 winglet(壳体顶·横向薄翼 + 两端翼端板·随深度自适应) ——
+    var wing = box(mw*0.78, 0.01, fd*0.5, MAT.frame); wing.position.set(0, hh+0.042, fz-fd*0.1); wing.rotation.x = -0.12; g.add(wing);
+    for(ss=-1; ss<=1; ss+=2) g.add(at(box(0.008, 0.032, fd*0.4, MAT.frame), ss*mw*0.38, hh+0.05, fz-fd*0.1));
+    // —— 下缘 gurney lip(壳体底·地效台阶示意·随深度自适应) ——
+    var gurney = box(mw*0.92, 0.009, fd*0.3, MAT.frame); gurney.position.set(0, -hh-0.006, fz-fd*0.04); gurney.rotation.x = 0.25; g.add(gurney);
     // —— 5 薄片联动百叶(在小口内·Aprilia five-element) ——
     var inner = mhM - capH*2, chord = (inner/SLAT_N)*0.84, i, y0, u, spanI;
     for(i=0;i<SLAT_N;i++){
