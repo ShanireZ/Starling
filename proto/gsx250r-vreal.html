@@ -29,8 +29,10 @@
   .note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.7}
   .note b{color:#cdd8e8}
   .annot{position:absolute;inset:0;pointer-events:none;display:none;z-index:6;font-size:11px}
-  .alabel{position:absolute;transform:translate(-50%,-50%);background:rgba(12,16,24,.82);border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--text);white-space:nowrap;box-shadow:0 1px 6px rgba(0,0,0,.45)}
+  .alabel{position:absolute;transform:translate(-50%,-50%);background:rgba(12,16,24,.86);border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--text);white-space:nowrap;box-shadow:0 1px 6px rgba(0,0,0,.45)}
   .adot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+  .aleader{position:absolute;height:1px;background:rgba(190,205,230,.65);transform-origin:0 50%}
+  .aspot{position:absolute;width:9px;height:9px;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 5px rgba(0,0,0,.7)}
 </style>
 </head>
 <body>
@@ -242,7 +244,7 @@
   // 局部 +Z = 开口朝车头(迎风);span 沿局部 X;百叶绕局部 X 联动;后侧通透(气流穿叶入车体)
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
-    var wTop = mw*0.9, wBot = mw, t = 0.03, fd = 0.08;     // 口=下宽上窄(微);fd=管深(一体式·适中)
+    var wTop = mw*0.92, wBot = mw, t = 0.015, fd = 0.06;   // t=罩壁厚(变薄至一半 0.03→0.015);fd=管深(略减)
     var fz = 0.012, hw = mw/2, hh = mh/2;
     // —— 一体式外罩 = 一根深挤出圆角梯形管(前缘小倒角=唇·内壁=喉壁·后侧通透·从唇到喉一片碳壳) ——
     var shell = trapRing(wTop, wBot, mh, t, fd, MAT.frame); shell.position.set(0,0,-fd*0.8); g.add(shell);
@@ -255,7 +257,7 @@
     var lW = box(0.01, mh, lenS, MAT.cavity); lW.position.set(-hw+dxS/2, 0, -fdep/2); lW.rotation.y = -aS; g.add(lW);
     var rW = box(0.01, mh, lenS, MAT.cavity); rW.position.set( hw-dxS/2, 0, -fdep/2); rW.rotation.y =  aS; g.add(rW);
     // —— 唇沿霁青细描边(仅一圈细线·MotoGP 赞助商 pinstripe 感) ——
-    g.add(at(trapRing(wTop, wBot, mh, t*0.18, 0.006, MAT.accent), 0, 0, fz+0.02));
+    g.add(at(trapRing(wTop, wBot, mh, 0.004, 0.006, MAT.accent), 0, 0, fz+0.018));
     // —— 中央竖向分隔 → 左右两槽 ——
     g.add(at(box(0.014, mh*0.86, 0.045, MAT.frame), 0, 0, fz-0.022));
     // —— 上/下静态盖条(框成 louvre bank·按高度比例) ——
@@ -300,7 +302,7 @@
   var intakeRig = new T.Group(); bike.add(intakeRig);  // 进气口独立成组(换真车模型后整体重定位)
   var intakes = [];
   for(k=0;k<2;k++){ sx=(k===0?-1:1);
-    var iv = makeIntake(0.34, 0.145);                  // 横向口径(更宽·高度不变·填满侧整流罩气道位)
+    var iv = makeIntake(0.44, 0.17);                   // 口径加大(填满蓝框·长度加大)
     iv.g.position.set(sx*0.27, 0.92, 0.46);
     iv.g.rotation.y = sx*0.50;                         // 朝前外侧(贴侧整流罩)
     intakeRig.add(iv.g);
@@ -556,22 +558,43 @@
     {key:'frame',   text:'一体碳壳唇口', color:'#caa9ff'}
   ];
   var annotBox = document.createElement('div'); annotBox.className='annot'; stage.appendChild(annotBox);
+  var leader = document.createElement('div'); leader.className='aleader'; annotBox.appendChild(leader);
+  var aspot = document.createElement('div'); aspot.className='aspot'; annotBox.appendChild(aspot);
   var annotEls = ANNOT.map(function(d){ var el=document.createElement('div'); el.className='alabel';
     el.innerHTML='<span class="adot" style="background:'+d.color+'"></span>'+d.text; annotBox.appendChild(el); return el; });
   var annotOn=false, annotBtn=document.getElementById('annot-btn');
-  function setAnnot(v){ annotOn=v; annotBox.style.display=v?'block':'none'; if(annotBtn) annotBtn.textContent=v?'🏷 标注:开':'🏷 部件标注'; if(v) focusIntake(); }
+  function setAnnot(v){ annotOn=v; annotBox.style.display=v?'block':'none'; if(annotBtn) annotBtn.textContent=v?'🏷 标注:开(指向部件)':'🏷 部件标注'; if(v) focusIntake(); else hoverIdx=-1; }
   if(annotBtn) annotBtn.addEventListener('click', function(){ setAnnot(!annotOn); });
-  var _wp = new T.Vector3();
+  // 鼠标移到部件上 → 高亮该件(标签显示在外侧)
+  var _wp = new T.Vector3(), mscr = [], gc = {x:0,y:0}, hoverIdx = -1;
+  dom.addEventListener('pointermove', function(e){
+    if(!annotOn || down){ return; }
+    var rect = stage.getBoundingClientRect(), mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    var best=-1, bd=1e9, i, d;
+    for(i=0;i<mscr.length;i++){ if(!mscr[i] || !mscr[i].vis) continue; d=Math.hypot(mscr[i].x-mx, mscr[i].y-my); if(d<bd){bd=d;best=i;} }
+    hoverIdx = (bd < 52) ? best : -1;
+  });
+  dom.addEventListener('pointerleave', function(){ hoverIdx=-1; });
   function updateAnnot(){
-    var iv = intakes[1]; if(!iv || !iv.markers) return;
-    var Wp = stage.clientWidth||920, Hp = stage.clientHeight||520, ai, el;
+    var iv = intakes[1]; if(!iv || !iv.markers){ return; }
+    var Wp = stage.clientWidth||920, Hp = stage.clientHeight||520, ai;
+    _wp.set(0,0,0); iv.g.localToWorld(_wp); _wp.project(cam); gc.x=(_wp.x*0.5+0.5)*Wp; gc.y=(-_wp.y*0.5+0.5)*Hp;
     for(ai=0; ai<ANNOT.length; ai++){
       _wp.copy(iv.markers[ANNOT[ai].key]); iv.g.localToWorld(_wp); _wp.project(cam);
-      el = annotEls[ai];
-      if(_wp.z>1 || _wp.x<-1.05 || _wp.x>1.05 || _wp.y<-1.05 || _wp.y>1.05){ el.style.display='none'; continue; }
-      el.style.display='block';
-      el.style.left = ((_wp.x*0.5+0.5)*Wp).toFixed(1)+'px';
-      el.style.top  = ((-_wp.y*0.5+0.5)*Hp).toFixed(1)+'px';
+      var vis = !(_wp.z>1 || _wp.x<-1.1 || _wp.x>1.1 || _wp.y<-1.1 || _wp.y>1.1);
+      mscr[ai] = { x:(_wp.x*0.5+0.5)*Wp, y:(-_wp.y*0.5+0.5)*Hp, vis:vis };
+      annotEls[ai].style.display = 'none';
+    }
+    leader.style.display='none'; aspot.style.display='none';
+    if(hoverIdx>=0 && mscr[hoverIdx] && mscr[hoverIdx].vis){
+      var m = mscr[hoverIdx], el = annotEls[hoverIdx];
+      var ox=m.x-gc.x, oy=m.y-gc.y, ol=Math.hypot(ox,oy)||1; ox/=ol; oy/=ol;     // 外侧方向=鳃口心→部件
+      var lx = Math.max(64, Math.min(Wp-64, m.x+ox*70)), ly = Math.max(16, Math.min(Hp-16, m.y+oy*70));
+      el.style.display='block'; el.style.left=lx.toFixed(1)+'px'; el.style.top=ly.toFixed(1)+'px';
+      aspot.style.display='block'; aspot.style.left=m.x.toFixed(1)+'px'; aspot.style.top=m.y.toFixed(1)+'px'; aspot.style.background=ANNOT[hoverIdx].color;
+      var dx=lx-m.x, dy=ly-m.y, len=Math.hypot(dx,dy), ang=Math.atan2(dy,dx)*180/Math.PI;
+      leader.style.display='block'; leader.style.left=m.x.toFixed(1)+'px'; leader.style.top=m.y.toFixed(1)+'px';
+      leader.style.width=len.toFixed(1)+'px'; leader.style.transform='rotate('+ang.toFixed(1)+'deg)';
     }
   }
 
