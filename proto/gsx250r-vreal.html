@@ -56,7 +56,7 @@
   <div class="mhint">真车模型:<span id="mstatus">未加载（当前为占位体块）</span> · 把 <b>.glb / .gltf</b> 文件<b>拖进上方画面</b>即加载,或用 <code>?model=URL</code> · 滚轮缩放</div>
   <p class="note">
     <b>视觉件,非性能件。</b> 鼠标拖动旋转,滑杆控制车速 → 开度。两侧鳃口落在<b>车身侧板(车把下整流罩)</b>上、<b>开口朝车头迎风</b>;百叶由<b>同一个自由度</b>联动:低速<b>齐平闭合</b>封口,随车速<b>张开露缝</b>(全速叶片转平、缝最大)。固定框承受风载。<br>
-    <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):气流绕过车体——仅作<b>机制演示</b>,非性能验证。<span style="opacity:.7">(注:流场仍按旧侧向方案绘制,迎风进气口版的流场待对齐。)</span><br>
+    <b>「🌫 风洞气流」</b>= 示意流线 + 粒子(沿启发式流场,<b>非 CFD 解算</b>):气流绕过车体;<b>迎风口张开时把迎面气流「纳入」开口</b>(暖色流线弯入口、粒子被吸入·开度越大越强),闭合时齐平掠过——像<b>张鳃呼吸</b>,仅作<b>机制演示</b>,非性能验证。<br>
     <b>车身 = 真实 3D 模型</b>(默认加载 <code>res/sports_bike</code>;鳃口已落到<b>车身侧板</b>、开口朝车头迎风)。换车型可拖入别的 <b>.glb/.gltf</b> 或 <code>?model=URL</code>。GSX250R 真实尺寸底本见 <code>docs/gsx250r-reference.md</code>;约束见 <code>docs/charter.md</code>。<br>
     <span style="opacity:.7">车体模型:"Sports Bike" by <b>Futurealiti</b> — <a href="https://sketchfab.com/3d-models/sports-bike-a80259b859c842d5824c25c61e0fc421" style="color:#7fb3ff">Sketchfab</a>,授权 <b>CC-BY-4.0</b>(仅作占位演示·非 Suzuki 官方车型)。</span>
   </p>
@@ -415,8 +415,8 @@
     // 迎风口纳气(局部汇):开度越大、离口越近,迎面气流被吸入越强 → 上游流线弯入口(视觉呼吸·非真穿流)
     var draw = Math.max(0, Math.min(1, openFrac));
     if(draw > 0.001){
-      _d.copy(IL).sub(p); var g=Math.exp(-_d.lengthSq()/0.08); out.addScaledVector(_d, draw*4.5*g);
-      _d.copy(IR).sub(p); g=Math.exp(-_d.lengthSq()/0.08);     out.addScaledVector(_d, draw*4.5*g);
+      _d.copy(IL).sub(p); var g=Math.exp(-_d.lengthSq()/0.08); out.addScaledVector(_d, draw*6.0*g);
+      _d.copy(IR).sub(p); g=Math.exp(-_d.lengthSq()/0.08);     out.addScaledVector(_d, draw*6.0*g);
     }
     if(p.y<0.02 && out.y<0) out.y=0;
     var l=out.length(); if(l>2.4) out.multiplyScalar(2.4/l);
@@ -439,7 +439,7 @@
         fieldVel(_p,openFrac,_v); _v.normalize().multiplyScalar(0.045); _p.add(_v);
         if(_p.z<-1.5||_p.y>2.2||_p.y<0.02){ for(f=s+1;f<80;f++){ pos[f*3]=_p.x;pos[f*3+1]=_p.y;pos[f*3+2]=_p.z; } break; } }
       streamLines[i].geometry.attributes.position.needsUpdate=true;
-      streamLines[i].material.color.setHex((openFrac>0.05 && minD<0.14) ? 0xff8a3d : 0x9fd0ff);   // 暖色=被迎风口纳入
+      streamLines[i].material.color.setHex((openFrac>0.05 && minD<0.18) ? 0xff8a3d : 0x9fd0ff);   // 暖色=被迎风口纳入
     }
   }
   // 流动粒子(live 烟流)
