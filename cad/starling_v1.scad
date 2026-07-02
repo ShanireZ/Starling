@@ -23,7 +23,7 @@ FRAME_H  = 70;    // 框外高(Y)
 FRAME_D  = 25;    // 框深/喉道(Z;前脸 z=0,喉道向 +Z)
 LIP_T    = 3;     // 前脸包边板厚
 OPEN_W   = 105;   // 内腔宽(叶片区)
-OPEN_H   = 56;    // 内腔高
+OPEN_H   = 60;   // 内腔高(叶尖扫掠 ±28.9 → 留 1.1 间隙)
 LIP_W    = 98;    // 前脸窗宽(包住叶端 3.5mm×2)
 LIP_H    = 50;    // 前脸窗高(包住上下叶行程 3mm×2)
 AXIS_Z   = 10;    // 叶轴线距前脸深度
@@ -82,16 +82,16 @@ module frame() {
   difference() {
     union() {
       translate([-FRAME_W/2, -FRAME_H/2, 0]) cube([FRAME_W, FRAME_H, FRAME_D]);
-      for (sx=[-1,1], sy=[-1,1])   // 安装耳(后缘平面)
-        translate([sx>0 ? FRAME_W/2 : -FRAME_W/2-EAR,
-                   sy>0 ? FRAME_H/2 : -FRAME_H/2-EAR,
+      for (sx=[-1,1], sy=[-1,1])   // 安装耳(后缘平面;嵌入本体 0.2 保证融合)
+        translate([sx>0 ? FRAME_W/2-0.2 : -FRAME_W/2-EAR,
+                   sy>0 ? FRAME_H/2-0.2 : -FRAME_H/2-EAR,
                    FRAME_D-3])
-          cube([EAR, EAR, 3]);
+          cube([EAR+0.2, EAR+0.2, 3]);
     }
     // 前脸窗(包边圈)
     translate([-LIP_W/2, -LIP_H/2, -0.5]) cube([LIP_W, LIP_H, LIP_T+0.5]);
-    // 主腔(叶片区,后侧通透)
-    translate([-OPEN_W/2, -OPEN_H/2, LIP_T]) cube([OPEN_W, OPEN_H, FRAME_D]);
+    // 主腔(叶片区,后侧通透;向前重叠 0.2 避免与前脸窗切割面共面)
+    translate([-OPEN_W/2, -OPEN_H/2, LIP_T-0.2]) cube([OPEN_W, OPEN_H, FRAME_D]);
     // 轴套孔:Ø3(黄铜套压入),两侧柱贯通
     for (y=BLADE_Y)
       translate([-FRAME_W/2-1, y, AXIS_Z]) rotate([0,90,0])

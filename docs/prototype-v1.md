@@ -91,6 +91,8 @@
 - **材料**:台架 PLA 快速迭代;装车件换 **PETG**(耐热日晒)。
 - **风载参考**:100km/h 动压 ~470Pa,4 片叶总受风面 ~0.006m² → 总力 ~3N,折算轴力矩 ~0.3kg·cm——舵机与簧都远够。
 
+> **CAD 已落地(2026-07-02)**:参数化源码 [`cad/starling_v1.scad`](../cad/starling_v1.scad) + 6 件 STL([`cad/stl/`](../cad/stl))+ 渲染验证图([`cad/preview/`](../cad/preview));打印/下料/装配/标定说明见 [`cad/README.md`](../cad/README.md)。注意两处与上文的落地修正:**闭合角 = 10° 微倾**(纯竖直相邻叶尖干涉,鳞片式搭接;固件标定 `us0` 自然吸收)、**内腔高 56→60**(叶尖扫掠间隙)。
+
 ---
 
 ## 5. 固件设计(骨架见 [`firmware/starling/starling.ino`](../firmware/starling/starling.ino))
