@@ -6,6 +6,7 @@
 
 - 立项文档:[docs/charter.md](docs/charter.md)
 - 项目约定与状态:[AGENTS.md](AGENTS.md)
+- **原型一号规格(BOM / 接线图 / 固件骨架):[docs/prototype-v1.md](docs/prototype-v1.md)** — 固件骨架在 [firmware/starling/starling.ino](firmware/starling/starling.ino)
 - **3D 演示(真实车身 + 鳃口落位):[proto/gsx250r-vreal.html](proto/gsx250r-vreal.html)** — 默认加载真实运动摩托模型,鳃口落在**车身侧板、开口朝车头迎风**;滑杆模拟车速 → 百叶开度;「🌫 风洞气流」演示迎风口纳气;可拖入别的 `.glb/.gltf` 换车型。**(唯一 3D 真相;旧轻量方块版 `wing-3d.html` 已于 2026-06-28 退役。)**
 
 > 网页为单文件 three.js;真实车体模型需经本地静态服务器加载(见 `res/`)。

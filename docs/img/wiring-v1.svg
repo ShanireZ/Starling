@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" font-family="'Microsoft YaHei','PingFang SC',sans-serif">
+  <rect x="0" y="0" width="1000" height="780" fill="#ffffff"/>
+
+  <!-- 标题 -->
+  <text x="60" y="48" font-size="22" font-weight="bold" fill="#222">Starling 原型一号 · 接线图 v1</text>
+  <text x="60" y="74" font-size="12" fill="#666">2026-07-02 · 配套规格见 docs/prototype-v1.md · 左侧 I2C 模块的 VCC/GND 以标签标注(未画线),按标签接 5V/3V3 主轨并共地</text>
+
+  <!-- 图例 -->
+  <g font-size="12" fill="#333">
+    <line x1="620" y1="46" x2="648" y2="46" stroke="#d33333" stroke-width="3"/><text x="654" y="50">5V</text>
+    <line x1="690" y1="46" x2="718" y2="46" stroke="#222222" stroke-width="3"/><text x="724" y="50">GND</text>
+    <line x1="770" y1="46" x2="798" y2="46" stroke="#2266dd" stroke-width="3"/><text x="804" y="50">SDA</text>
+    <line x1="850" y1="46" x2="878" y2="46" stroke="#e08800" stroke-width="3"/><text x="884" y="50">SCL</text>
+    <line x1="620" y1="68" x2="648" y2="68" stroke="#2a9d4a" stroke-width="3"/><text x="654" y="72">SPI</text>
+    <line x1="690" y1="68" x2="718" y2="68" stroke="#8844cc" stroke-width="3"/><text x="724" y="72">UART</text>
+    <line x1="770" y1="68" x2="798" y2="68" stroke="#009999" stroke-width="3"/><text x="804" y="72">舵机 PWM</text>
+  </g>
+
+  <!-- ================= ESP32 主控 ================= -->
+  <rect x="400" y="140" width="200" height="440" rx="10" fill="#f5f7fa" stroke="#333" stroke-width="1.5"/>
+  <text x="500" y="166" font-size="15" font-weight="bold" fill="#222" text-anchor="middle">ESP32 DevKit</text>
+  <text x="500" y="184" font-size="11" fill="#555" text-anchor="middle">WROOM-32 · 双核 240MHz</text>
+  <text x="500" y="202" font-size="10.5" fill="#0a7a4a" text-anchor="middle">内置蓝牙 = 无线配置口(仅配置+取数)</text>
+
+  <!-- 左侧引脚 -->
+  <g font-size="11" fill="#333">
+    <rect x="394" y="236" width="8" height="8" fill="#d33333"/><text x="410" y="244">3V3(供左侧 3V3 模块)</text>
+    <rect x="394" y="264" width="8" height="8" fill="#222222"/><text x="410" y="272">GND</text>
+    <rect x="394" y="316" width="8" height="8" fill="#2266dd"/><text x="410" y="324">GPIO21 · SDA</text>
+    <rect x="394" y="344" width="8" height="8" fill="#e08800"/><text x="410" y="352">GPIO22 · SCL</text>
+  </g>
+  <!-- 右侧引脚 -->
+  <g font-size="11" fill="#333">
+    <rect x="598" y="228" width="8" height="8" fill="#2a9d4a"/><text x="590" y="236" text-anchor="end">GPIO18 · SCK</text>
+    <rect x="598" y="254" width="8" height="8" fill="#2a9d4a"/><text x="590" y="262" text-anchor="end">GPIO19 · MISO</text>
+    <rect x="598" y="280" width="8" height="8" fill="#2a9d4a"/><text x="590" y="288" text-anchor="end">GPIO23 · MOSI</text>
+    <rect x="598" y="306" width="8" height="8" fill="#2a9d4a"/><text x="590" y="314" text-anchor="end">GPIO5 · CS</text>
+    <rect x="598" y="358" width="8" height="8" fill="#8844cc"/><text x="590" y="366" text-anchor="end">GPIO17 · TX2</text>
+    <rect x="598" y="384" width="8" height="8" fill="#8844cc"/><text x="590" y="392" text-anchor="end">GPIO16 · RX2</text>
+    <rect x="598" y="438" width="8" height="8" fill="#009999"/><text x="590" y="446" text-anchor="end">GPIO13 · 舵机 PWM</text>
+    <rect x="598" y="496" width="8" height="8" fill="#d33333"/><text x="590" y="504" text-anchor="end">VIN(5V 入)</text>
+    <rect x="598" y="524" width="8" height="8" fill="#222222"/><text x="590" y="532" text-anchor="end">GND</text>
+  </g>
+  <text x="500" y="562" font-size="10.5" fill="#555" text-anchor="middle">USB 口:有线配置 / 下载数据</text>
+
+  <!-- ================= 左侧 I2C 模块 ================= -->
+  <!-- MS4525DO -->
+  <rect x="70" y="150" width="220" height="82" rx="8" fill="#eef4ff" stroke="#4a6fa5" stroke-width="1.2"/>
+  <text x="82" y="172" font-size="12.5" font-weight="bold" fill="#223">MS4525DO 压差(皮托测速)</text>
+  <text x="82" y="190" font-size="10.5" fill="#555">I2C 0x28 · VCC→5V(开漏兼容)</text>
+  <text x="82" y="206" font-size="10.5" fill="#555">双嘴接皮托管软管(动压/静压)</text>
+  <text x="82" y="222" font-size="10.5" fill="#a55">皮托管装车头迎风干净气流处</text>
+  <line x1="290" y1="192" x2="330" y2="192" stroke="#2266dd" stroke-width="2.5"/>
+  <line x1="290" y1="212" x2="352" y2="212" stroke="#e08800" stroke-width="2.5"/>
+
+  <!-- MPU6050 -->
+  <rect x="70" y="252" width="220" height="82" rx="8" fill="#eef4ff" stroke="#4a6fa5" stroke-width="1.2"/>
+  <text x="82" y="274" font-size="12.5" font-weight="bold" fill="#223">MPU6050 IMU(振动/姿态)</text>
+  <text x="82" y="292" font-size="10.5" fill="#555">I2C 0x69 · VCC→5V(GY-521 带稳压)</text>
+  <text x="82" y="308" font-size="10.5" fill="#a55">AD0 接 3V3 → 地址 0x69(避冲突)</text>
+  <line x1="290" y1="294" x2="330" y2="294" stroke="#2266dd" stroke-width="2.5"/>
+  <line x1="290" y1="314" x2="352" y2="314" stroke="#e08800" stroke-width="2.5"/>
+
+  <!-- BMP280 -->
+  <rect x="70" y="354" width="220" height="82" rx="8" fill="#eef4ff" stroke="#4a6fa5" stroke-width="1.2"/>
+  <text x="82" y="376" font-size="12.5" font-weight="bold" fill="#223">BMP280 气压 / 气温</text>
+  <text x="82" y="394" font-size="10.5" fill="#555">I2C 0x76 · VCC→3V3</text>
+  <text x="82" y="410" font-size="10.5" fill="#555">环境参照(空气密度/温度记录)</text>
+  <line x1="290" y1="396" x2="330" y2="396" stroke="#2266dd" stroke-width="2.5"/>
+  <line x1="290" y1="416" x2="352" y2="416" stroke="#e08800" stroke-width="2.5"/>
+
+  <!-- DS3231 -->
+  <rect x="70" y="456" width="220" height="82" rx="8" fill="#eef4ff" stroke="#4a6fa5" stroke-width="1.2"/>
+  <text x="82" y="478" font-size="12.5" font-weight="bold" fill="#223">DS3231 RTC(时间戳)</text>
+  <text x="82" y="496" font-size="10.5" fill="#555">I2C 0x68 · VCC→3V3(带纽扣电池)</text>
+  <text x="82" y="512" font-size="10.5" fill="#555">给日志文件与数据行打真实时间</text>
+  <line x1="290" y1="498" x2="330" y2="498" stroke="#2266dd" stroke-width="2.5"/>
+  <line x1="290" y1="518" x2="352" y2="518" stroke="#e08800" stroke-width="2.5"/>
+
+  <!-- I2C 总线 -->
+  <line x1="330" y1="192" x2="330" y2="498" stroke="#2266dd" stroke-width="2.5"/>
+  <line x1="352" y1="212" x2="352" y2="518" stroke="#e08800" stroke-width="2.5"/>
+  <line x1="330" y1="320" x2="394" y2="320" stroke="#2266dd" stroke-width="2.5"/>
+  <line x1="352" y1="348" x2="394" y2="348" stroke="#e08800" stroke-width="2.5"/>
+
+  <!-- ================= 右侧模块 ================= -->
+  <!-- microSD -->
+  <rect x="720" y="210" width="230" height="120" rx="8" fill="#eefaf0" stroke="#3a8a52" stroke-width="1.2"/>
+  <text x="732" y="232" font-size="12.5" font-weight="bold" fill="#223">microSD 模块(SPI)</text>
+  <text x="732" y="250" font-size="10.5" fill="#555">VCC→3V3 · 16GB FAT32</text>
+  <text x="732" y="266" font-size="10.5" fill="#555">本地日志:10Hz CSV(OQ-6 丰富采集)</text>
+  <g font-size="10" fill="#3a8a52">
+    <text x="726" y="286" text-anchor="end" fill="#555"> </text>
+  </g>
+  <line x1="606" y1="232" x2="720" y2="232" stroke="#2a9d4a" stroke-width="2.5"/>
+  <line x1="606" y1="258" x2="720" y2="258" stroke="#2a9d4a" stroke-width="2.5"/>
+  <line x1="606" y1="284" x2="720" y2="284" stroke="#2a9d4a" stroke-width="2.5"/>
+  <line x1="606" y1="310" x2="720" y2="310" stroke="#2a9d4a" stroke-width="2.5"/>
+  <g font-size="9.5" fill="#3a8a52">
+    <text x="712" y="228" text-anchor="end">SCK</text>
+    <text x="712" y="254" text-anchor="end">MISO</text>
+    <text x="712" y="280" text-anchor="end">MOSI</text>
+    <text x="712" y="306" text-anchor="end">CS</text>
+  </g>
+
+  <!-- GPS -->
+  <rect x="720" y="345" width="230" height="80" rx="8" fill="#f5effc" stroke="#7a55b0" stroke-width="1.2"/>
+  <text x="732" y="367" font-size="12.5" font-weight="bold" fill="#223">NEO-6M GPS(对地速度)</text>
+  <text x="732" y="385" font-size="10.5" fill="#555">VCC→5V · 9600bps · 天线朝天露置</text>
+  <text x="732" y="401" font-size="10.5" fill="#555">纯记录:给皮托测速标定当参照</text>
+  <line x1="606" y1="362" x2="720" y2="362" stroke="#8844cc" stroke-width="2.5"/>
+  <line x1="606" y1="388" x2="720" y2="388" stroke="#8844cc" stroke-width="2.5"/>
+  <g font-size="9.5" fill="#7a55b0">
+    <text x="712" y="358" text-anchor="end">TX2→RX</text>
+    <text x="712" y="384" text-anchor="end">RX2←TX</text>
+  </g>
+
+  <!-- 舵机 -->
+  <rect x="720" y="438" width="230" height="100" rx="8" fill="#e8f7f7" stroke="#0a8a8a" stroke-width="1.2"/>
+  <text x="732" y="460" font-size="12.5" font-weight="bold" fill="#223">迷你金属数字舵 17-25g</text>
+  <text x="732" y="478" font-size="10.5" fill="#555">EMAX ES3054 级 · 0-90° 行程带限位</text>
+  <text x="732" y="494" font-size="10.5" fill="#555">电源直取 5V 主轨(勿走板载稳压)</text>
+  <text x="732" y="510" font-size="10.5" fill="#a55">断电松劲 → 扭簧弹回齐平闭合</text>
+  <line x1="606" y1="442" x2="720" y2="442" stroke="#009999" stroke-width="2.5"/>
+  <!-- 舵机电源 -->
+  <line x1="790" y1="640" x2="790" y2="538" stroke="#d33333" stroke-width="2.5"/>
+  <line x1="815" y1="655" x2="815" y2="538" stroke="#222222" stroke-width="2.5"/>
+  <line x1="762" y1="585" x2="778" y2="585" stroke="#333" stroke-width="2"/>
+  <line x1="762" y1="592" x2="778" y2="592" stroke="#333" stroke-width="2"/>
+  <text x="756" y="592" font-size="10" fill="#333" text-anchor="end">≥470µF 就近并联</text>
+
+  <!-- ================= 电源 ================= -->
+  <line x1="120" y1="640" x2="900" y2="640" stroke="#d33333" stroke-width="3.5"/>
+  <line x1="120" y1="655" x2="900" y2="655" stroke="#222222" stroke-width="3.5"/>
+  <text x="120" y="632" font-size="11" fill="#d33333" font-weight="bold">5V 主轨</text>
+  <text x="120" y="672" font-size="11" fill="#222" font-weight="bold">GND 共地</text>
+  <!-- VIN / GND 接主轨 -->
+  <path d="M606,500 L650,500 L650,640" fill="none" stroke="#d33333" stroke-width="2.5"/>
+  <path d="M606,528 L628,528 L628,655" fill="none" stroke="#222222" stroke-width="2.5"/>
+
+  <!-- 充电宝 -->
+  <rect x="120" y="690" width="270" height="66" rx="8" fill="#fff2ee" stroke="#c05a3a" stroke-width="1.2"/>
+  <text x="132" y="712" font-size="12.5" font-weight="bold" fill="#223">USB 充电宝 5V ≥2A(OQ-3 独立电池)</text>
+  <text x="132" y="730" font-size="10.5" fill="#555">选无「小电流自动断电」款;零侵入易拆</text>
+  <text x="132" y="746" font-size="10.5" fill="#555">定形后改取车电 12V→5V,加保险丝</text>
+  <line x1="180" y1="690" x2="180" y2="640" stroke="#d33333" stroke-width="2.5"/>
+  <line x1="210" y1="690" x2="210" y2="655" stroke="#222222" stroke-width="2.5"/>
+
+  <!-- 注意事项 -->
+  <rect x="420" y="682" width="520" height="80" rx="8" fill="#fffbe8" stroke="#d9c36a" stroke-width="1.2"/>
+  <text x="432" y="700" font-size="10.5" fill="#333">① MPU6050 的 AD0 接 3V3 → 地址 0x69,避开 DS3231 固定的 0x68 冲突</text>
+  <text x="432" y="716" font-size="10.5" fill="#333">② I2C 总线上拉 3.3V(模块自带即可);MS4525DO 5V 供电、开漏总线兼容</text>
+  <text x="432" y="732" font-size="10.5" fill="#333">③ 舵机电源直取 5V 主轨、就近并 ≥470µF 电容;全系统必须共地</text>
+  <text x="432" y="748" font-size="10.5" fill="#333">④ 失效保护:断电舵机松劲 → 扭簧把百叶弹回齐平闭合(OQ-5)</text>
+</svg>
