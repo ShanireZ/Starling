@@ -1,22 +1,39 @@
 # Starling
 
-**车身侧板(车把下整流罩)**上一对**电子百叶进气口("鳃口")**——固定框 + 多片联动百叶,**开口朝车头迎风**,随车速张合的动态造型件。速度越快,叶片开得越大、张开露缝(战斗机 / F1 多段开缝的样子),像**张鳃呼吸**纳入迎面气流。
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg?style=flat-square)](LICENSE)
+![Type: physical prototype](https://img.shields.io/badge/type-physical%20prototype-success.svg?style=flat-square)
+![Platform: GSX250R](https://img.shields.io/badge/platform-GSX250R-blue.svg?style=flat-square)
+![Prototype: v1 specified](https://img.shields.io/badge/prototype-v1%20specified-orange.svg?style=flat-square)
 
-**这是一个看得见的动态造型件,主打张合动态本身的炫酷。** 开口通透后迎风纳气,带来**附带的气流 / 散热收益(温和,非主目标)**;面向 100km/h 以内的日常骑行,不为微小性能堆复杂度。
+Starling v2 是面向 Suzuki GSX250R 车身侧板的电子百叶进气口（“鳃口”）原型：固定框承风、多片叶片由一个舵机联动，开口朝车头迎风，并随车速张合。
 
-- 立项文档:[docs/charter.md](docs/charter.md)
-- 项目约定与状态:[AGENTS.md](AGENTS.md)
-- **原型一号规格(BOM / 接线图 / 固件骨架):[docs/prototype-v1.md](docs/prototype-v1.md)** — 固件骨架在 [firmware/starling/starling.ino](firmware/starling/starling.ino)
-- **3D 演示(真实车身 + 鳃口落位):[proto/gsx250r-vreal.html](proto/gsx250r-vreal.html)** — 默认加载真实运动摩托模型,鳃口落在**车身侧板、开口朝车头迎风**;滑杆模拟车速 → 百叶开度;「🌫 风洞气流」演示迎风口纳气;可拖入别的 `.glb/.gltf` 换车型。**(唯一 3D 真相;旧轻量方块版 `wing-3d.html` 已于 2026-06-28 退役。)**
+它首先是可见的动态造型件。迎风纳气和散热只是不堆复杂度的温和附带收益；不以性能提升、主动空气动力学或重型冷却系统为目标。
 
-> 网页为单文件 three.js;真实车体模型需经本地静态服务器加载(见 `res/`)。
+## 当前状态
 
-### 第三方素材署名
-- 车体模型 **"Sports Bike" by Futurealiti**(https://sketchfab.com/3d-models/sports-bike-a80259b859c842d5824c25c61e0fc421),授权 **CC-BY-4.0**。仅作占位 / 演示用的运动摩托车体,**非 Suzuki GSX250R 官方车型**;后续可替换。
+原型一号已经形成可审查的设计包，但尚未完成上板或实车验证：
 
-> v2 重启。上一版因"为微小性能堆五学科复杂度"而流产;本版以 **收益封顶 + 第一周可观察 + 单人可调 + 禁战线蔓延** 为铁律。
+- [立项文档](docs/charter.md)记录 v2 的范围、失效保护和安全边界。
+- [原型一号规格](docs/prototype-v1.md)包含 BOM、接线、台架验证顺序和控制逻辑。
+- [参数化 CAD](cad/starling_v1.scad)及其 [打印/装配说明](cad/README.md)是机构的唯一 CAD 来源；`cad/dist/` 为打印交付包。
+- [固件骨架](firmware/starling/starling.ino)面向 ESP32 DevKit（WROOM-32），定义了皮托压差测速、舵机控制、被动记录和 USB/蓝牙配置边界；源码明确标注为尚未上板编译验证的骨架。
 
-## 许可 / License
+## 3D 机构演示
 
-- 本项目自有的代码、文档与素材采用 **GNU GPL-3.0**(见 [LICENSE](LICENSE))。Copyright © 2026 ShanireZ。
-- **例外**:`res/sports_bike/` 为第三方模型 **"Sports Bike" by Futurealiti**,授权 **CC-BY-4.0**,其许可与署名以 [`res/sports_bike/license.txt`](res/sports_bike/license.txt) 为准,**不受本仓库 GPL 协议覆盖**。
+[gsx250r-vreal.html](proto/gsx250r-vreal.html) 是唯一现行 3D 演示。请通过本地静态 HTTP 服务器从仓库根目录打开它；页面用滑杆模拟车速和百叶开度，并可拖入其他 `.glb`/`.gltf` 模型。页面中的气流效果是机制演示，**不是 CFD 或性能验证**。
+
+默认加载的车体是第三方运动摩托模型，便于示意鳃口在侧板的落位；它不是 Suzuki GSX250R 官方模型。
+
+## 项目约束
+
+- 设计铁律和当前状态见 [AGENTS.md](AGENTS.md)。
+- 断电时机构应由弹簧回到闭合位置；上路前须完成台架、封闭场地和当地法规自查。
+- 不加入 App 实时控制、云遥测、OTA 或将被动数据记录接入控制闭环。
+
+## 第三方素材
+
+`res/sports_bike/` 中的 **“Sports Bike” by Futurealiti** 采用 [CC-BY-4.0](res/sports_bike/license.txt)，仅用于演示占位，且不受仓库 GPL 许可覆盖。
+
+## License
+
+本项目自有的代码、文档与素材采用 [GNU General Public License v3.0](LICENSE) 发布。
