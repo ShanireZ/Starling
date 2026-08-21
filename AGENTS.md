@@ -33,3 +33,21 @@ Starling v2 是 GSX250R 车身侧板上的电子百叶进气口（“鳃口”�
 
 - 默认不提交，除非用户明确要求或任务明确包含建仓、charter 或状态更新。
 - 提交信息简洁、中文。
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in this repository's GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical triage labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This target uses a single-context domain-doc layout. See `docs/agents/domain.md`.
+
+### Related engineering skills
+
+See `docs/agents/skill-workflows.md` for recommendations on when to use the installed engineering skills and how their workflows compose.
