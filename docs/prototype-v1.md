@@ -1,3 +1,8 @@
+---
+type: reference
+title: Starling 原型一号规格(prototype v1)
+---
+
 # Starling 原型一号规格(prototype v1)
 
 > 2026-07-02 · 依据:charter §6 全部 OQ 裁决 + 本日硬件选型四拍板(见附录 A 决策记录)。
