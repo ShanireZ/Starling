@@ -38,4 +38,4 @@ Starling v2 是 GSX250R 车身侧板上的电子百叶进气口（“鳃口”�
 
 - **Issue tracker：本仓 GitHub Issues。**
 - triage 标签、domain 文档布局、OKF 文档系统沿用工作区约定：[`docs/agents/index.md`](docs/agents/index.md)。
-- 按环节的守则、完成判据与技能对照见根 [`../Docs/dev_guide.md`](../Docs/dev_guide.md)，它每个会话自动加载。
+- 进入工作区后必须读取根 [`../Docs/dev_guide.md`](../Docs/dev_guide.md) 的环节守则、完成判据与技能对照；Claude 由根 `CLAUDE.md` 显式导入，其他运行时不得假定自动加载。
