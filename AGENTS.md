@@ -1,6 +1,6 @@
 # AGENTS.md — Starling
 
-> 本文件遵循工作区集体准则 [`../AGENTS.md`](../AGENTS.md)。先读该文件，再读本文件、[立项文档](docs/charter.md)和与改动相邻的规格或源码。
+> 本文件遵循工作区集体准则 [`../AGENTS.md`](../AGENTS.md)，勿假定已自动加载。先读该文件，再读本文件、[立项文档](docs/charter.md)和与改动相邻的规格或源码。
 
 ## 项目是什么
 
@@ -52,4 +52,3 @@ Starling v2 是 GSX250R 车身侧板上的电子百叶进气口（“鳃口”�
 
 - **Issue tracker：本仓 GitHub Issues。**
 - triage 标签、domain 文档布局、OKF 文档系统沿用工作区约定：[`docs/agents/index.md`](docs/agents/index.md)。
-- 进入工作区后读根 [`../AGENTS.md`](../AGENTS.md)；勿假定已自动加载。
