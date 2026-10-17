@@ -122,7 +122,7 @@
 
   function box(w,h,d,m){ return new T.Mesh(new T.BoxGeometry(w,h,d), m); }
   function cyl(rt,rb,h,seg,m){ return new T.Mesh(new T.CylinderGeometry(rt,rb,h,seg), m); }
-  // three.js 的 Object3D.position 是隻讀屬性,不能用 Object.assign 賦值 → 統一用此助手設位
+  // three.js 的 Object3D.position 是唯讀屬性,不能用 Object.assign 賦值 → 統一用此助手設位
   function at(mesh,x,y,z){ mesh.position.set(x,y,z); return mesh; }
   // 圓潤氣道邊框(NACA / MotoGP 導氣口觀感):圓角梯形外環 + 圓角內孔挖洞 + 大段光滑倒角唇口 → ExtrudeGeometry
   function trapRing(wTop,wBot,h,t,depth,m){

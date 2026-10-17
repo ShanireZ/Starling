@@ -1,14 +1,14 @@
 // ============================================================================
-// Starling 原型一號 · 固件骨架(2026-07-02)
+// Starling 原型一號 · 韌體骨架(2026-07-02)
 // 目標板:ESP32 DevKit(WROOM-32) · Arduino 框架
 //
-// 連線路徑:皮托管 → MS4525DO(I2C) → 閾值-斜坡曲線(滯回+限斜率+硬限位) → 舵機(百葉)
+// 連線路徑:皮托管 → MS4525DO(I2C) → 門檻值-斜坡曲線(滯回+限斜率+硬限位) → 舵機(百葉)
 // 旁路:MPU6050 / BMP280 / DS3231 / GPS → microSD 10Hz CSV(純被動記錄,不進控制閉環)
-// 設定:USB 串口 + 藍牙 SPP 共用同一命令臺(僅設定+取數,守 charter §3)
+// 設定:USB 序列埠 + 藍牙 SPP 共用同一命令臺(僅設定+取數,守 charter §3)
 //
 // ★ 狀態:骨架程式碼——結構與控制律完整,尚未上板編譯驗證;
 //   BMP280 補償公式與 GPS NMEA 解析留 TODO(建議接 Adafruit_BMP280 / TinyGPSPlus 庫)。
-// ★ 邊界(charter §3,勿改):無 OTA;藍牙/串口不做任何即時開度控制;
+// ★ 邊界(charter §3,勿改):無 OTA;藍牙/序列埠不做任何即時開度控制;
 //   test 命令僅在 IAS < 5 km/h(臺架靜止)時接受。
 // ============================================================================
 
@@ -33,7 +33,7 @@ constexpr uint8_t ADDR_DS3231  = 0x68;
 
 // ---------------------------- 可設定參數(NVS 持久化) ----------------------------
 struct Params {
-  float vOn        = 20.0f;  // km/h,開始張開閾值
+  float vOn        = 20.0f;  // km/h,開始張開門檻值
   float vFull      = 60.0f;  // km/h,全開速度
   float hyst       = 3.0f;   // km/h,關閉滯回
   float openMaxDeg = 90.0f;  // 全開角硬上限(0=豎直閉合,90=水平全開)
@@ -75,7 +75,7 @@ float qZeroPa   = 0.0f;   // 靜止零偏(上電校準)
 float iasKmh    = 0.0f;   // 濾波後指示空速
 float qPa       = 0.0f;   // 當前壓差(去零偏)
 float openDeg   = 0.0f;   // 當前輸出開度
-int   sensFails = 0;      // 傳感連續失敗計數(≥25 → FAULT)
+int   sensFails = 0;      // 感測連續失敗計數(≥25 → FAULT)
 bool  logging   = true;
 bool  testMode  = false;  // test 命令臺架模式
 float testDeg   = 0.0f;
@@ -113,7 +113,7 @@ void servoWriteDeg(float deg) {
 }
 
 // ---------------------------- 控制律 ----------------------------
-// 閾值-斜坡 + 滯回:v>V_ON 起開;回落到 V_ON-HYST 以下才歸零(防在閾值附近抖)
+// 門檻值-斜坡 + 滯回:v>V_ON 起開;回落到 V_ON-HYST 以下才歸零(防在門檻值附近抖)
 float curveTargetPct(float vKmh) {
   static bool armed = false;
   if (!armed) {
@@ -147,7 +147,7 @@ void controlStep(float dtS) {
   servoWriteDeg(openDeg);
 }
 
-// ---------------------------- 傳感器套餐(純記錄) ----------------------------
+// ---------------------------- 感測器套餐(純記錄) ----------------------------
 struct Imu { float ax, ay, az, gx, gy, gz, tC; bool ok; };
 Imu imuRead() {
   Imu r{}; r.ok = false;
@@ -189,7 +189,7 @@ String rtcNow() {
 float bmpPressurePa() { return NAN; }
 float bmpTempC()      { return NAN; }
 
-// TODO(接件時完善):GPS NMEA 解析建議接 TinyGPSPlus 庫;骨架只開串口
+// TODO(接件時完善):GPS NMEA 解析建議接 TinyGPSPlus 庫;骨架只開序列埠
 struct Gps { bool fix = false; double lat = 0, lon = 0; float spdKmh = 0; };
 Gps gps;
 void gpsPoll() {
@@ -227,7 +227,7 @@ void logStep() {
   if (millis() - lastFlush > 1000) { logFile.flush(); lastFlush = millis(); }
 }
 
-// ---------------------------- 設定命令臺(串口 + 藍牙共用) ----------------------------
+// ---------------------------- 設定命令臺(序列埠 + 藍牙共用) ----------------------------
 void zeroCal() {
   float sum = 0; int n = 0;
   uint32_t t0 = millis();
@@ -320,7 +320,7 @@ void loop() {
   consolePoll(Serial, bufUsb);
   consolePoll(SerialBT, bufBt);
 
-  if (state == State::FAULT) {                         // 週期重試傳感,恢復則回 RUN
+  if (state == State::FAULT) {                         // 週期重試感測,恢復則回 RUN
     static uint32_t lastRetry = 0;
     if (now - lastRetry > 2000) {
       float pa, tC;

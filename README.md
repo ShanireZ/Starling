@@ -14,7 +14,7 @@ Starling v2 是面向 Suzuki GSX250R 車身側板的電子百葉進氣口（“�
 - [立項文件](docs/charter.md)記錄 v2 的範圍、失效保護和安全邊界。
 - [原型一號規格](docs/prototype-v1.md)包含 BOM、串接、臺架驗證順序和控制邏輯。
 - [參數化 CAD](cad/starling_v1.scad)及其 [列印/裝配說明](cad/README.md)是機構的唯一 CAD 來源；`cad/dist/` 為列印交付包。
-- [固件骨架](firmware/starling/starling.ino)面向 ESP32 DevKit（WROOM-32），定義了皮託壓差測速、舵機控制、被動記錄和 USB/藍牙設定邊界；原始碼明確標註為尚未上板編譯驗證的骨架。
+- [韌體骨架](firmware/starling/starling.ino)面向 ESP32 DevKit（WROOM-32），定義了皮託壓差測速、舵機控制、被動記錄和 USB/藍牙設定邊界；原始碼明確標註為尚未上板編譯驗證的骨架。
 
 ## 3D 機構演示
 
