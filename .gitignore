@@ -3,35 +3,35 @@ Thumbs.db
 .DS_Store
 desktop.ini
 
-# 编辑器 / IDE
+# 編輯器 / IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# 构建产物 / 临时
+# 建置產物 / 臨時
 /build/
 /dist/
 *.tmp
 *.log
 
-# 机密
+# 機密
 .env
 .env.*
 !.env.example
 
-# 依赖 / 缓存
+# 相依 / 快取
 node_modules/
 .cache/
 .parcel-cache/
 
-# 工具 / 代理临时
+# 工具 / 代理臨時
 .claude/
 .copilot-temp/
 
-# 其它临时
+# 其它臨時
 *.bak
 *.orig
 
-# 注意:AGENTS.md / agents.md 为项目准则,必须跟踪,勿在此排除。
+# 注意:AGENTS.md / agents.md 為專案準則,必須跟蹤,勿在此排除。

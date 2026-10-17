@@ -1,15 +1,15 @@
 // ============================================================================
-// Starling 原型一号 · 固件骨架(2026-07-02)
-// 目标板:ESP32 DevKit(WROOM-32) · Arduino 框架
+// Starling 原型一號 · 固件骨架(2026-07-02)
+// 目標板:ESP32 DevKit(WROOM-32) · Arduino 框架
 //
-// 链路:皮托管 → MS4525DO(I2C) → 阈值-斜坡曲线(滞回+限斜率+硬限位) → 舵机(百叶)
-// 旁路:MPU6050 / BMP280 / DS3231 / GPS → microSD 10Hz CSV(纯被动记录,不进控制闭环)
-// 配置:USB 串口 + 蓝牙 SPP 共用同一命令台(仅配置+取数,守 charter §3)
+// 連線路徑:皮托管 → MS4525DO(I2C) → 閾值-斜坡曲線(滯回+限斜率+硬限位) → 舵機(百葉)
+// 旁路:MPU6050 / BMP280 / DS3231 / GPS → microSD 10Hz CSV(純被動記錄,不進控制閉環)
+// 設定:USB 串口 + 藍牙 SPP 共用同一命令臺(僅設定+取數,守 charter §3)
 //
-// ★ 状态:骨架代码——结构与控制律完整,尚未上板编译验证;
-//   BMP280 补偿公式与 GPS NMEA 解析留 TODO(建议接 Adafruit_BMP280 / TinyGPSPlus 库)。
-// ★ 边界(charter §3,勿改):无 OTA;蓝牙/串口不做任何实时开度控制;
-//   test 命令仅在 IAS < 5 km/h(台架静止)时接受。
+// ★ 狀態:骨架程式碼——結構與控制律完整,尚未上板編譯驗證;
+//   BMP280 補償公式與 GPS NMEA 解析留 TODO(建議接 Adafruit_BMP280 / TinyGPSPlus 庫)。
+// ★ 邊界(charter §3,勿改):無 OTA;藍牙/串口不做任何即時開度控制;
+//   test 命令僅在 IAS < 5 km/h(臺架靜止)時接受。
 // ============================================================================
 
 #include <Wire.h>
@@ -18,7 +18,7 @@
 #include <Preferences.h>
 #include <BluetoothSerial.h>
 
-// ---------------------------- 引脚与地址 ----------------------------
+// ---------------------------- 引腳與位址 ----------------------------
 constexpr int PIN_I2C_SDA = 21;
 constexpr int PIN_I2C_SCL = 22;
 constexpr int PIN_SD_CS   = 5;    // VSPI:SCK=18 MISO=19 MOSI=23
@@ -27,20 +27,20 @@ constexpr int PIN_GPS_RX  = 16;   // UART2 ← GPS TX
 constexpr int PIN_GPS_TX  = 17;   // UART2 → GPS RX
 
 constexpr uint8_t ADDR_MS4525  = 0x28;
-constexpr uint8_t ADDR_MPU6050 = 0x69; // AD0 → 3V3(避开 DS3231 的 0x68)
+constexpr uint8_t ADDR_MPU6050 = 0x69; // AD0 → 3V3(避開 DS3231 的 0x68)
 constexpr uint8_t ADDR_BMP280  = 0x76;
 constexpr uint8_t ADDR_DS3231  = 0x68;
 
-// ---------------------------- 可配置参数(NVS 持久化) ----------------------------
+// ---------------------------- 可設定參數(NVS 持久化) ----------------------------
 struct Params {
-  float vOn        = 20.0f;  // km/h,开始张开阈值
-  float vFull      = 60.0f;  // km/h,全开速度
-  float hyst       = 3.0f;   // km/h,关闭滞回
-  float openMaxDeg = 90.0f;  // 全开角硬上限(0=竖直闭合,90=水平全开)
-  float slewDegS   = 120.0f; // 开度限斜率 °/s
-  int   servoUs0   = 1000;   // 0° 脉宽(装配后标定)
-  int   servoUs90  = 2000;   // 90° 脉宽
-  int   logHz      = 10;     // 日志频率
+  float vOn        = 20.0f;  // km/h,開始張開閾值
+  float vFull      = 60.0f;  // km/h,全開速度
+  float hyst       = 3.0f;   // km/h,關閉滯回
+  float openMaxDeg = 90.0f;  // 全開角硬上限(0=豎直閉合,90=水平全開)
+  float slewDegS   = 120.0f; // 開度限斜率 °/s
+  int   servoUs0   = 1000;   // 0° 脈寬(裝配後標定)
+  int   servoUs90  = 2000;   // 90° 脈寬
+  int   logHz      = 10;     // 紀錄頻率
 };
 Params P;
 Preferences prefs;
@@ -67,29 +67,29 @@ void paramsSave() {
   prefs.end();
 }
 
-// ---------------------------- 状态机 ----------------------------
+// ---------------------------- 狀態機 ----------------------------
 enum class State { BOOT, ZERO_CAL, RUN, FAULT };
 State state = State::BOOT;
 
-float qZeroPa   = 0.0f;   // 静止零偏(上电校准)
-float iasKmh    = 0.0f;   // 滤波后指示空速
-float qPa       = 0.0f;   // 当前压差(去零偏)
-float openDeg   = 0.0f;   // 当前输出开度
-int   sensFails = 0;      // 传感连续失败计数(≥25 → FAULT)
+float qZeroPa   = 0.0f;   // 靜止零偏(上電校準)
+float iasKmh    = 0.0f;   // 濾波後指示空速
+float qPa       = 0.0f;   // 當前壓差(去零偏)
+float openDeg   = 0.0f;   // 當前輸出開度
+int   sensFails = 0;      // 傳感連續失敗計數(≥25 → FAULT)
 bool  logging   = true;
-bool  testMode  = false;  // test 命令台架模式
+bool  testMode  = false;  // test 命令臺架模式
 float testDeg   = 0.0f;
 
 BluetoothSerial SerialBT;
 File logFile;
 
-// ---------------------------- MS4525DO 读取 ----------------------------
-// ±1 psi 差压变体(常见空速计模块):14 位,10%~90% 满码映射 -1..+1 psi
+// ---------------------------- MS4525DO 讀取 ----------------------------
+// ±1 psi 差壓變體(常見空速計模組):14 位,10%~90% 滿碼映射 -1..+1 psi
 bool ms4525Read(float &pa, float &tC) {
   Wire.requestFrom(ADDR_MS4525, (uint8_t)4);
   if (Wire.available() < 4) return false;
   uint8_t b0 = Wire.read(), b1 = Wire.read(), b2 = Wire.read(), b3 = Wire.read();
-  uint8_t status = b0 >> 6;                 // 0=正常 2=陈旧 3=故障
+  uint8_t status = b0 >> 6;                 // 0=正常 2=陳舊 3=故障
   if (status == 3) return false;
   int16_t praw = ((b0 & 0x3F) << 8) | b1;
   const float PSI_TO_PA = 6894.76f;
@@ -99,21 +99,21 @@ bool ms4525Read(float &pa, float &tC) {
   return true;
 }
 
-// ---------------------------- 舵机(LEDC 50Hz) ----------------------------
+// ---------------------------- 舵機(LEDC 50Hz) ----------------------------
 constexpr int SERVO_CH = 0;
 void servoInit() {
   ledcSetup(SERVO_CH, 50 /*Hz*/, 16 /*bit*/);
   ledcAttachPin(PIN_SERVO, SERVO_CH);
 }
 void servoWriteDeg(float deg) {
-  deg = constrain(deg, 0.0f, P.openMaxDeg);           // 软限位(机构另有硬限位)
+  deg = constrain(deg, 0.0f, P.openMaxDeg);           // 軟限位(機構另有硬限位)
   float us = P.servoUs0 + (P.servoUs90 - P.servoUs0) * deg / 90.0f;
   uint32_t duty = (uint32_t)(us / 20000.0f * 65535.0f);
   ledcWrite(SERVO_CH, duty);
 }
 
 // ---------------------------- 控制律 ----------------------------
-// 阈值-斜坡 + 滞回:v>V_ON 起开;回落到 V_ON-HYST 以下才归零(防在阈值附近抖)
+// 閾值-斜坡 + 滯回:v>V_ON 起開;回落到 V_ON-HYST 以下才歸零(防在閾值附近抖)
 float curveTargetPct(float vKmh) {
   static bool armed = false;
   if (!armed) {
@@ -131,11 +131,11 @@ void controlStep(float dtS) {
   if (ms4525Read(paRaw, tC)) {
     sensFails = 0;
     qPa = paRaw - qZeroPa;
-    float q = max(qPa, 0.0f);                          // 负压(软管接反/乱流)按 0
-    float v = sqrtf(2.0f * q / 1.225f) * 3.6f;         // IAS km/h,标况密度
-    iasKmh += 0.2f * (v - iasKmh);                     // EMA 滤波
+    float q = max(qPa, 0.0f);                          // 負壓(軟管接反/亂流)按 0
+    float v = sqrtf(2.0f * q / 1.225f) * 3.6f;         // IAS km/h,標況密度
+    iasKmh += 0.2f * (v - iasKmh);                     // EMA 濾波
   } else if (++sensFails >= 25) {
-    state = State::FAULT;                              // 连续失败 → 失效闭合
+    state = State::FAULT;                              // 連續失敗 → 失效閉合
   }
 
   float targetDeg = testMode ? testDeg
@@ -147,7 +147,7 @@ void controlStep(float dtS) {
   servoWriteDeg(openDeg);
 }
 
-// ---------------------------- 传感器套餐(纯记录) ----------------------------
+// ---------------------------- 傳感器套餐(純記錄) ----------------------------
 struct Imu { float ax, ay, az, gx, gy, gz, tC; bool ok; };
 Imu imuRead() {
   Imu r{}; r.ok = false;
@@ -169,7 +169,7 @@ void imuInit() {
   Wire.endTransmission();
 }
 
-// DS3231:BCD 读时间,给日志文件名与数据行
+// DS3231:BCD 讀時間,給紀錄檔案名與資料行
 String rtcNow() {
   Wire.beginTransmission(ADDR_DS3231);
   Wire.write(0x00);
@@ -185,20 +185,20 @@ String rtcNow() {
   return String(buf);
 }
 
-// TODO(接件时完善):BMP280 需读出厂标定系数做补偿运算,建议直接接 Adafruit_BMP280 库
+// TODO(接件時完善):BMP280 需讀出廠標定係數做補償運算,建議直接接 Adafruit_BMP280 庫
 float bmpPressurePa() { return NAN; }
 float bmpTempC()      { return NAN; }
 
-// TODO(接件时完善):GPS NMEA 解析建议接 TinyGPSPlus 库;骨架只开串口
+// TODO(接件時完善):GPS NMEA 解析建議接 TinyGPSPlus 庫;骨架只開串口
 struct Gps { bool fix = false; double lat = 0, lon = 0; float spdKmh = 0; };
 Gps gps;
 void gpsPoll() {
   while (Serial2.available()) {
-    Serial2.read();                                    // TODO:喂给 TinyGPSPlus
+    Serial2.read();                                    // TODO:餵給 TinyGPSPlus
   }
 }
 
-// ---------------------------- 日志(microSD CSV) ----------------------------
+// ---------------------------- 紀錄(microSD CSV) ----------------------------
 bool sdOk = false;
 void logOpen() {
   if (!sdOk) return;
@@ -227,11 +227,11 @@ void logStep() {
   if (millis() - lastFlush > 1000) { logFile.flush(); lastFlush = millis(); }
 }
 
-// ---------------------------- 配置命令台(串口 + 蓝牙共用) ----------------------------
+// ---------------------------- 設定命令臺(串口 + 藍牙共用) ----------------------------
 void zeroCal() {
   float sum = 0; int n = 0;
   uint32_t t0 = millis();
-  while (millis() - t0 < 2000) {                       // 静止 2s 取均值
+  while (millis() - t0 < 2000) {                       // 靜止 2s 取均值
     float pa, tC;
     if (ms4525Read(pa, tC)) { sum += pa; n++; }
     delay(10);
@@ -267,7 +267,7 @@ void handleCmd(Stream &io, String line) {
   } else if (line == "log on")  { logging = true;  io.println("日志开"); }
   else if (line == "log off")   { logging = false; io.println("日志关"); }
   else if (line.startsWith("test")) {
-    // ★ §3 边界:test 仅台架(近静止)可用,绝不在骑行中接受外部控制
+    // ★ §3 邊界:test 僅臺架(近靜止)可用,絕不在騎行中接受外部控制
     if (line == "test off") { testMode = false; io.println("test 退出"); return; }
     if (iasKmh >= 5.0f) { io.println("拒绝:IAS>=5km/h,test 仅限静止台架"); return; }
     testMode = true; testDeg = constrain(line.substring(5).toFloat(), 0.0f, P.openMaxDeg);
@@ -288,18 +288,18 @@ void consolePoll(Stream &io, String &buf) {
 // ---------------------------- 主流程 ----------------------------
 void setup() {
   Serial.begin(115200);
-  SerialBT.begin("Starling-01");                       // 蓝牙 SPP,仅配置+取数
+  SerialBT.begin("Starling-01");                       // 藍牙 SPP,僅設定+取數
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, 400000);
   Serial2.begin(9600, SERIAL_8N1, PIN_GPS_RX, PIN_GPS_TX);
   paramsLoad();
   servoInit();
-  servoWriteDeg(0);                                    // 上电先闭合
+  servoWriteDeg(0);                                    // 上電先閉合
   imuInit();
   sdOk = SD.begin(PIN_SD_CS);
   logOpen();
-  // TODO:esp_task_wdt 看门狗;BMP280 初始化
+  // TODO:esp_task_wdt 看門狗;BMP280 初始化
   state = State::ZERO_CAL;
-  zeroCal();                                           // OQ-4:上电静止零偏
+  zeroCal();                                           // OQ-4:上電靜止零偏
   state = State::RUN;
   Serial.println("Starling 原型一号就绪(help 看命令)");
 }
@@ -308,7 +308,7 @@ void loop() {
   static uint32_t lastCtl = 0, lastLog = 0;
   uint32_t now = millis();
 
-  if (now - lastCtl >= 20) {                           // 50Hz 控制环
+  if (now - lastCtl >= 20) {                           // 50Hz 控制環
     controlStep((now - lastCtl) / 1000.0f);
     lastCtl = now;
   }
@@ -320,7 +320,7 @@ void loop() {
   consolePoll(Serial, bufUsb);
   consolePoll(SerialBT, bufBt);
 
-  if (state == State::FAULT) {                         // 周期重试传感,恢复则回 RUN
+  if (state == State::FAULT) {                         // 週期重試傳感,恢復則回 RUN
     static uint32_t lastRetry = 0;
     if (now - lastRetry > 2000) {
       float pa, tC;

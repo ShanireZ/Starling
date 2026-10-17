@@ -74,7 +74,7 @@
   var T = window.THREE, stage = document.getElementById('stage');
   if(!T){ document.getElementById('fallback').style.display='block'; return; }
 
-  // ---- 渲染器 / 场景 / 相机 ----
+  // ---- 繪製器 / 場景 / 相機 ----
   var W = stage.clientWidth || 920, H = 520;
   var renderer = new T.WebGLRenderer({antialias:true, alpha:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
@@ -87,22 +87,22 @@
   cam.position.set(0, 2.55, 8.2);
   cam.lookAt(0, 1.12, 1.1);
 
-  // ---- 灯光（汽车漆质感:半球天光 + 主光 + 蓝冷边光）----
+  // ---- 燈光（汽車漆質感:半球天光 + 主光 + 藍冷邊光）----
   scene.add(new T.HemisphereLight(0xbcd2ff, 0x2a2118, 0.85));
   var key = new T.DirectionalLight(0xffffff, 0.70); key.position.set(5, 9, 7); scene.add(key);
   var rim = new T.DirectionalLight(0x88aaff, 0.45); rim.position.set(-6, 4, -6); scene.add(rim);
   var fill = new T.DirectionalLight(0xffffff, 0.25); fill.position.set(0, 2, 9); scene.add(fill);
 
-  // ---- 材质 ----
+  // ---- 材質 ----
   function paint(c){ return new T.MeshStandardMaterial({color:c, roughness:0.32, metalness:0.55}); }
   function metalDark(c){ return new T.MeshStandardMaterial({color:c, roughness:0.45, metalness:0.8}); }
   function rough(c){ return new T.MeshStandardMaterial({color:c, roughness:0.85, metalness:0.1}); }
   var MAT = {
-    body:   paint(0x1f5fd6),       // 车漆蓝(整流罩)
-    slat:   new T.MeshStandardMaterial({color:0x6a727c, roughness:0.45, metalness:0.62}), // 百叶=枪灰金属薄片(拾光读出开合·偏碳但保可见)
-    frame:  new T.MeshStandardMaterial({color:0x1c1e22, roughness:0.6, metalness:0.5}),   // 碳纤唇口/框(哑光结构碳)
-    accent: new T.MeshStandardMaterial({color:0x5d8a8c, roughness:0.4, metalness:0.3}),   // 唇沿点缀(霁青·MotoGP 单色描边·仅唇沿)
-    cavity: new T.MeshStandardMaterial({color:0x0a0b0d, roughness:0.95, metalness:0.1, side:T.DoubleSide}), // 深黑喉道(拉纵深)
+    body:   paint(0x1f5fd6),       // 車漆藍(整流罩)
+    slat:   new T.MeshStandardMaterial({color:0x6a727c, roughness:0.45, metalness:0.62}), // 百葉=槍灰金屬薄片(拾光讀出開合·偏碳但保可見)
+    frame:  new T.MeshStandardMaterial({color:0x1c1e22, roughness:0.6, metalness:0.5}),   // 碳纖唇口/框(啞光結構碳)
+    accent: new T.MeshStandardMaterial({color:0x5d8a8c, roughness:0.4, metalness:0.3}),   // 唇沿點綴(霽青·MotoGP 單色描邊·僅唇沿)
+    cavity: new T.MeshStandardMaterial({color:0x0a0b0d, roughness:0.95, metalness:0.1, side:T.DoubleSide}), // 深黑喉道(拉縱深)
     tire:   rough(0x14130f),
     rim:    metalDark(0x3a3f47),
     disc:   metalDark(0x9aa0a8),
@@ -114,19 +114,19 @@
 
   var pivot = new T.Group(); scene.add(pivot);
 
-  // 地面(柔和反差,衬出车体)
+  // 地面(柔和反差,襯出車體)
   var ground = new T.Mesh(new T.CircleGeometry(3.4, 48), new T.MeshStandardMaterial({color:0x10151e, roughness:1.0, metalness:0.0}));
   ground.rotation.x = -Math.PI/2; ground.position.y = 0; pivot.add(ground);
-  var grid = new T.GridHelper(6, 24, 0x46506a, 0x2b3344);   // 6m 网格,每格 0.25m
+  var grid = new T.GridHelper(6, 24, 0x46506a, 0x2b3344);   // 6m 網格,每格 0.25m
   grid.material.transparent = true; grid.material.opacity = 0.30; grid.position.y = 0.001; pivot.add(grid);
 
   function box(w,h,d,m){ return new T.Mesh(new T.BoxGeometry(w,h,d), m); }
   function cyl(rt,rb,h,seg,m){ return new T.Mesh(new T.CylinderGeometry(rt,rb,h,seg), m); }
-  // three.js 的 Object3D.position 是只读属性,不能用 Object.assign 赋值 → 统一用此助手设位
+  // three.js 的 Object3D.position 是隻讀屬性,不能用 Object.assign 賦值 → 統一用此助手設位
   function at(mesh,x,y,z){ mesh.position.set(x,y,z); return mesh; }
-  // 圆润气道边框(NACA / MotoGP 导气口观感):圆角梯形外环 + 圆角内孔挖洞 + 大段光滑倒角唇口 → ExtrudeGeometry
+  // 圓潤氣道邊框(NACA / MotoGP 導氣口觀感):圓角梯形外環 + 圓角內孔挖洞 + 大段光滑倒角唇口 → ExtrudeGeometry
   function trapRing(wTop,wBot,h,t,depth,m){
-    // 圆角梯形 Shape:四角用二次贝塞尔抹圆(c=角点,从前一边 r 处切入、向后一边 r 处切出)
+    // 圓角梯形 Shape:四角用二次貝塞爾抹圓(c=角點,從前一邊 r 處切入、向後一邊 r 處切出)
     function rquad(wT,wB,hh,r){
       var P=[[-wT/2,hh/2],[wT/2,hh/2],[wB/2,-hh/2],[-wB/2,-hh/2]], sh=new T.Shape(), i;
       for(i=0;i<4;i++){
@@ -140,21 +140,21 @@
       }
       sh.closePath(); return sh;
     }
-    var rad = Math.min(wTop, h) * 0.34;                       // 圆角半径随口径(越大越圆润·接近 stadium/椭圆)
+    var rad = Math.min(wTop, h) * 0.34;                       // 圓角半徑隨口徑(越大越圓潤·接近 stadium/橢圓)
     var o = rquad(wTop+2*t, wBot+2*t, h+2*t, rad+t);
     o.holes.push(rquad(wTop, wBot, h, rad));
     return new T.Mesh(new T.ExtrudeGeometry(o,{depth:depth, bevelEnabled:true,
-      bevelThickness:Math.min(depth*0.5, 0.018), bevelSize:Math.min(t*0.6, 0.02), bevelSegments:6, steps:1}), m);  // 前缘小唇·多段圆润(深挤出时唇不吃满管)
+      bevelThickness:Math.min(depth*0.5, 0.018), bevelSize:Math.min(t*0.6, 0.02), bevelSegments:6, steps:1}), m);  // 前緣小唇·多段圓潤(深擠出時唇不吃滿管)
   }
 
-  // ============ 整车按真实尺寸建模（单位 m;数据见 docs/gsx250r-reference.md）============
+  // ============ 整車按真實尺寸建模（單位 m;資料見 docs/gsx250r-reference.md）============
   var SPEC = { wheelbase:1.430, frontR:0.304, rearR:0.314, frontW:0.110, rearW:0.140, seatH:0.790, height:1.110, length:2.085 };
-  var FW = new T.Vector3(0, SPEC.frontR,  SPEC.wheelbase/2);   // 前轮中心
-  var RW = new T.Vector3(0, SPEC.rearR,  -SPEC.wheelbase/2);   // 后轮中心
+  var FW = new T.Vector3(0, SPEC.frontR,  SPEC.wheelbase/2);   // 前輪中心
+  var RW = new T.Vector3(0, SPEC.rearR,  -SPEC.wheelbase/2);   // 後輪中心
   var bike = new T.Group(); pivot.add(bike);
   var k, sx;
 
-  // 车轮(十辐铸铝 + 刹车碟),复用于前/后
+  // 車輪(十輻鑄鋁 + 剎車碟),重複使用於前/後
   function makeWheel(R, w){
     var g = new T.Group(), j;
     var tire = cyl(R,R,w,32,MAT.tire); tire.rotation.z=Math.PI/2; g.add(tire);
@@ -167,7 +167,7 @@
   var frontWheel = makeWheel(SPEC.frontR, SPEC.frontW); frontWheel.position.copy(FW); bike.add(frontWheel);
   var rearWheel  = makeWheel(SPEC.rearR,  SPEC.rearW);  rearWheel.position.copy(RW);  bike.add(rearWheel);
 
-  // 前叉(两管 rake~25°)+ 转向头三角台
+  // 前叉(兩管 rake~25°)+ 轉向頭三角臺
   var STEER = new T.Vector3(0, 0.95, 0.62);
   for(k=0;k<2;k++){ sx=(k===0?-1:1)*0.085;
     var fk = cyl(0.022,0.026,0.74,12,MAT.fork);
@@ -175,13 +175,13 @@
   }
   bike.add(at(box(0.16,0.07,0.10,MAT.fork), 0,STEER.y,STEER.z));
 
-  // 后摇臂 + 中置避震
+  // 後搖臂 + 中置避震
   for(k=0;k<2;k++){ sx=(k===0?-1:1)*0.10;
     var sa = box(0.05,0.055,0.62,MAT.fork); sa.position.set(sx,(RW.y+0.34)/2,RW.z/2); sa.rotation.x=-0.18; bike.add(sa);
   }
   bike.add(at(cyl(0.028,0.028,0.26,10,MAT.mirror), 0,0.50,-0.28));
 
-  // 引擎块 + 排气
+  // 引擎塊 + 排氣
   bike.add(at(box(0.34,0.34,0.46,MAT.fork), 0,0.46,0.06));
   bike.add(at(box(0.30,0.22,0.30,MAT.frame), 0,0.54,0.10));
   var ex = cyl(0.032,0.04,0.5,12,MAT.disc); ex.position.set(0.10,0.30,0.30); ex.rotation.x=1.2; bike.add(ex);
@@ -189,9 +189,9 @@
 
   // 油箱 / 座 / 尾段
   var tank = box(0.34,0.20,0.46,MAT.body); tank.position.set(0,0.84,0.28); tank.rotation.x=0.06; bike.add(tank);
-  bike.add(at(box(0.28,0.06,0.40,MAT.frame), 0,0.80,-0.16));          // 座垫
+  bike.add(at(box(0.28,0.06,0.40,MAT.frame), 0,0.80,-0.16));          // 座墊
   var tail = box(0.22,0.16,0.40,MAT.body); tail.position.set(0,0.86,-0.54); tail.rotation.x=-0.22; bike.add(tail);
-  bike.add(at(box(0.15,0.05,0.10,MAT.head), 0,0.90,-0.76));           // 尾灯
+  bike.add(at(box(0.15,0.05,0.10,MAT.head), 0,0.90,-0.76));           // 尾燈
 
   // —— 全包整流罩 ——
   bike.add(at(box(0.30,0.06,0.50,MAT.body), 0,0.20,0.20));            // 腹底
@@ -200,13 +200,13 @@
     var side  = box(0.06,0.44,0.66,MAT.body); side.position.set(sx*0.23,0.68,0.30); side.rotation.y=sx*0.12; bike.add(side);
   }
   var cowl = box(0.40,0.34,0.40,MAT.body); cowl.position.set(0,0.90,0.66); cowl.rotation.x=0.10; bike.add(cowl);
-  bike.add(at(box(0.30,0.12,0.26,MAT.body), 0,1.02,0.56));            // 罩眉 / 风挡基座
-  bike.add(at(box(0.20,0.30,0.05,MAT.frame), 0,0.89,0.84));           // 灯罩黑底(先放·灯嵌其中)
-  var lt = cyl(0.05,0.05,0.04,6,MAT.head); lt.rotation.x=Math.PI/2; lt.rotation.y=Math.PI/6; lt.position.set(0,0.95,0.86); bike.add(lt);  // 上头灯(小六角投射)
-  var lb = cyl(0.05,0.05,0.04,6,MAT.head); lb.rotation.x=Math.PI/2; lb.rotation.y=Math.PI/6; lb.position.set(0,0.83,0.86); bike.add(lb);  // 下头灯
+  bike.add(at(box(0.30,0.12,0.26,MAT.body), 0,1.02,0.56));            // 罩眉 / 風擋基座
+  bike.add(at(box(0.20,0.30,0.05,MAT.frame), 0,0.89,0.84));           // 燈罩黑底(先放·燈嵌其中)
+  var lt = cyl(0.05,0.05,0.04,6,MAT.head); lt.rotation.x=Math.PI/2; lt.rotation.y=Math.PI/6; lt.position.set(0,0.95,0.86); bike.add(lt);  // 上頭燈(小六角投射)
+  var lb = cyl(0.05,0.05,0.04,6,MAT.head); lb.rotation.x=Math.PI/2; lb.rotation.y=Math.PI/6; lb.position.set(0,0.83,0.86); bike.add(lb);  // 下頭燈
   var screen = box(0.28,0.24,0.02,MAT.screen); screen.position.set(0,1.00,0.58); screen.rotation.x=-0.55; bike.add(screen);
 
-  // 前 / 后挡泥板 + 后视镜 + 把手
+  // 前 / 後擋泥板 + 後視鏡 + 把手
   var fender = new T.Mesh(new T.TorusGeometry(SPEC.frontR+0.045,0.03,8,24,Math.PI*0.7), MAT.body);
   fender.rotation.y=Math.PI/2; fender.rotation.z=-0.5; fender.position.set(FW.x,FW.y,FW.z+0.02); bike.add(fender);
   bike.add(at(box(0.13,0.04,0.22,MAT.frame), 0,RW.y+0.28,RW.z-0.02));
@@ -216,23 +216,23 @@
     var bar=cyl(0.013,0.013,0.16,8,MAT.fork); bar.position.set(sx*0.16,0.95,0.50); bar.rotation.z=Math.PI/2; bike.add(bar);
   }
 
-  // ============ 电子百叶进气口（固定框 + 联动百叶）============
-  // 调参常量:百叶张合角度(度)。**负角=绕上缘铰链转、下缘向外掀**;0°竖直封口 → -90°水平羽化。
-  // 物理(owner 选 B「高速低阻」):全速 -90° 叶片**顺气流=羽化→最小阻力、不导流**;中途(~-45°)才短暂偏流。
-  var SLAT_CLOSED_DEG = 0;    // 初始(0 km/h):叶片**竖直封口**(挡住喉道)
-  var SLAT_OPEN_DEG   = -90;  // 全速:叶片转到**水平放平(调平)= 通风;此时正前看成侧棱属正常开启态**
-  var SLAT_N = 5;             // 阿普利亚"五元素格栅"=5 薄片
+  // ============ 電子百葉進氣口（固定框 + 聯動百葉）============
+  // 調參常數:百葉張合角度(度)。**負角=繞上緣鉸鏈轉、下緣向外掀**;0°豎直封口 → -90°水平羽化。
+  // 物理(owner 選 B「高速低阻」):全速 -90° 葉片**順氣流=羽化→最小阻力、不導流**;中途(~-45°)才短暫偏流。
+  var SLAT_CLOSED_DEG = 0;    // 初始(0 km/h):葉片**豎直封口**(擋住喉道)
+  var SLAT_OPEN_DEG   = -90;  // 全速:葉片轉到**水平放平(調平)= 通風;此時正前看成側稜屬正常開啟態**
+  var SLAT_N = 5;             // 阿普利亞"五元素格柵"=5 薄片
 
-  // 平薄片(thin box·有厚度·绕中心转:竖直闭合 ↔ 水平放平,开合两端都基本贴面)
+  // 平薄片(thin box·有厚度·繞中心轉:豎直閉合 ↔ 水平放平,開合兩端都基本貼面)
   function makeSlat(span, chord, thick, m){
     return new T.Mesh(new T.BoxGeometry(span, chord, thick), m);
   }
-  // 竖向导流片(strake)·后缘锯齿(KTM shark-tooth):前缘直、后缘 sawtooth;薄挤出后转成竖鳍(chord→+Z 前·薄→X)
+  // 豎嚮導流片(strake)·後緣鋸齒(KTM shark-tooth):前緣直、後緣 sawtooth;薄擠出後轉成豎鰭(chord→+Z 前·薄→X)
   function serratedFin(chord, height, thick, teeth, toothD, m){
     var sh = new T.Shape(); sh.moveTo(0, -height/2); sh.lineTo(chord, -height/2);
-    sh.lineTo(chord, height/2); sh.lineTo(0, height/2);            // 前缘(x=chord)直
-    var j; for(j=0;j<teeth;j++){                                   // 后缘(x=0)自上而下锯齿
-      sh.lineTo(toothD, height/2-(j+0.5)*(height/teeth));          // 内凹(notch)
+    sh.lineTo(chord, height/2); sh.lineTo(0, height/2);            // 前緣(x=chord)直
+    var j; for(j=0;j<teeth;j++){                                   // 後緣(x=0)自上而下鋸齒
+      sh.lineTo(toothD, height/2-(j+0.5)*(height/teeth));          // 內凹(notch)
       sh.lineTo(0,      height/2-(j+1)*(height/teeth));            // 尖出(tip)
     }
     sh.closePath();
@@ -240,18 +240,18 @@
     m2.rotation.y = -Math.PI/2; return m2;                         // chord→+Z(前)·height→Y·厚→X
   }
 
-  // 单个进气口(MotoGP 导气口语言:一体式碳罩 + NACA 漏斗喉壁 + 中央分隔双槽 + 上下盖条 + 5 薄片 + 霁青唇沿 + 旁置 strake):
-  // 局部 +Z = 开口朝车头(迎风);span 沿局部 X;百叶绕局部 X 联动;后侧通透(气流穿叶入车体)
-  // mw/mh=前脸口框尺寸;迎风百叶口=直边圆角矩形 + 5 完整百叶;后接葫芦形扩压进气道
+  // 單個進氣口(MotoGP 導氣口語言:一體式碳罩 + NACA 漏斗喉壁 + 中央分隔雙槽 + 上下蓋條 + 5 薄片 + 霽青唇沿 + 旁置 strake):
+  // 局部 +Z = 開口朝車頭(迎風);span 沿局部 X;百葉繞局部 X 聯動;後側通透(氣流穿葉入車體)
+  // mw/mh=前臉口框尺寸;迎風百葉口=直邊圓角矩形 + 5 完整百葉;後接葫蘆形擴壓進氣道
   function makeIntake(mw, mh){
     var g = new T.Group(), slats = [];
-    var fd = 0.2;                                          // 进气道前后深度(侧面看的"宽度")
+    var fd = 0.2;                                          // 進氣道前後深度(側面看的"寬度")
     var fz = 0.012, hw = mw/2, hh = mh/2;
     var mwM = mw*0.9, mhM = mh*0.86, hwM = mwM/2, hhM = mhM/2;
     var tBig = (mw-mwM)/2;
-    // —— 直边圆角矩形前脸口框(carbon) ——
+    // —— 直邊圓角矩形前臉口框(carbon) ——
     var shell = trapRing(mwM, mwM*0.94, mhM, tBig, 0.03, MAT.frame); shell.position.set(0,0,-0.008); g.add(shell);
-    // —— 葫芦形进气道:四面 carbon 壁·前窄后宽(bs>1=diffuser 扩压·气动正解·非喷管) ——
+    // —— 葫蘆形進氣道:四面 carbon 壁·前窄後寬(bs>1=diffuser 擴壓·氣動正解·非噴管) ——
     var bs = 1.5, fdep = fd, wAvg = (1+bs)/2;
     var dyT = hhM*(1-bs), lenT = Math.hypot(fdep, dyT), aT = Math.atan2(dyT, fdep);
     var topW = box(mwM*wAvg, 0.012, lenT, MAT.frame); topW.position.set(0,  hhM-dyT/2, -fdep/2); topW.rotation.x = -aT; g.add(topW);
@@ -259,15 +259,15 @@
     var dxS = hwM*(1-bs), lenS = Math.hypot(fdep, dxS), aS = Math.atan2(dxS, fdep);
     var lW = box(0.012, mhM*wAvg, lenS, MAT.frame); lW.position.set(-hwM+dxS/2, 0, -fdep/2); lW.rotation.y = -aS; g.add(lW);
     var rW = box(0.012, mhM*wAvg, lenS, MAT.frame); rW.position.set( hwM-dxS/2, 0, -fdep/2); rW.rotation.y =  aS; g.add(rW);
-    // —— 后端宽封口环(葫芦尾·收束扩压段) ——
+    // —— 後端寬封口環(葫蘆尾·收束擴壓段) ——
     g.add(at(trapRing(mwM*bs, mwM*bs*0.96, mhM*bs, 0.012, 0.012, MAT.frame), 0, 0, -fd));
-    // —— 直边霁青描边(一圈细线) ——
+    // —— 直邊霽青描邊(一圈細線) ——
     g.add(at(trapRing(mwM, mwM*0.94, mhM, 0.004, 0.006, MAT.accent), 0, 0, fz+0.016));
-    // —— 上/下静态盖条(框出 louvre bank) ——
+    // —— 上/下靜態蓋條(框出 louvre bank) ——
     var capH = mhM*0.10;
     g.add(at(box(mwM*0.9, capH, 0.02, MAT.frame), 0,  hhM-capH*0.5, fz));
     g.add(at(box(mwM*0.9, capH, 0.02, MAT.frame), 0, -hhM+capH*0.5, fz));
-    // —— 5 完整联动百叶(等长·绕中心转·满速放平通风) ——
+    // —— 5 完整聯動百葉(等長·繞中心轉·滿速放平通風) ——
     var inner = mhM - capH*2, chord = (inner/SLAT_N)*0.82, span = mwM*0.86, i, y0;
     for(i=0;i<SLAT_N;i++){
       var s = new T.Group();
@@ -276,12 +276,12 @@
       s.add(makeSlat(span, chord, 0.009, MAT.slat));
       g.add(s); slats.push(s);
     }
-    // —— 附件:全部贴紧口框前脸(不悬空·不深探入风道) ——
+    // —— 附件:全部貼緊口框前臉(不懸空·不深探入風道) ——
     var ss;
-    // winglet(紧贴口顶 + 两端翼端板)
+    // winglet(緊貼口頂 + 兩端翼端板)
     var wing = box(mwM*1.06, 0.012, 0.05, MAT.frame); wing.position.set(0, hhM+0.013, fz+0.004); wing.rotation.x = -0.12; g.add(wing);
     for(ss=-1; ss<=1; ss+=2) g.add(at(box(0.008, 0.026, 0.045, MAT.frame), ss*mwM*0.5, hhM+0.016, fz+0.004));
-    // strake(紧贴口侧·竖鳍后缘锯齿 KTM + L 端板)
+    // strake(緊貼口側·豎鰭後緣鋸齒 KTM + L 端板)
     var fin, fg;
     for(ss=-1; ss<=1; ss+=2){
       fin = serratedFin(0.05, mhM*0.94, 0.007, 5, 0.01, MAT.frame);
@@ -289,9 +289,9 @@
       fg.position.set(ss*(hwM+0.007), 0, fz-0.006); fg.rotation.y = ss*0.14; g.add(fg);
       fg.add(at(box(0.022, 0.006, 0.04, MAT.frame), ss*0.008, mhM*0.46, 0.02));
     }
-    // gurney lip(紧贴口底·地效台阶示意)
+    // gurney lip(緊貼口底·地效臺階示意)
     var gurney = box(mwM*1.0, 0.009, 0.03, MAT.frame); gurney.position.set(0, -hhM-0.011, fz+0.008); gurney.rotation.x = 0.25; g.add(gurney);
-    // 部件标注锚点(局部坐标·给 HTML 标签投影用)
+    // 部件標註錨點(局部座標·給 HTML 標籤投影用)
     var markers = {
       winglet: new T.Vector3(0, hhM+0.02, fz+0.02),
       strake:  new T.Vector3(hwM+0.02, -hhM*0.3, fz+0.03),
@@ -302,17 +302,17 @@
     return { g:g, slats:slats, markers:markers };
   }
 
-  var intakeRig = new T.Group(); bike.add(intakeRig);  // 进气口独立成组(换真车模型后整体重定位)
+  var intakeRig = new T.Group(); bike.add(intakeRig);  // 進氣口獨立成組(換真車模型後整體重定位)
   var intakes = [];
   for(k=0;k<2;k++){ sx=(k===0?-1:1);
-    var iv = makeIntake(0.115, 0.173);                 // 口面 宽再-1/4·高不变(更窄更高)
+    var iv = makeIntake(0.115, 0.173);                 // 口面 寬再-1/4·高不變(更窄更高)
     iv.g.position.set(sx*0.27, 0.92, 0.46);
-    iv.g.rotation.y = sx*0.50;                         // 朝前外侧(贴侧整流罩)
+    iv.g.rotation.y = sx*0.50;                         // 朝前外側(貼側整流罩)
     intakeRig.add(iv.g);
     intakes.push(iv);
   }
 
-  // 开度 0..1 → 百叶角度(联动:所有叶片同角)。负角 → 上缘(铰链)贴面固定、下缘向外掀出凸出车体
+  // 開度 0..1 → 百葉角度(聯動:所有葉片同角)。負角 → 上緣(鉸鏈)貼面固定、下緣向外掀出凸出車體
   function setOpen(t){
     var deg = SLAT_CLOSED_DEG + (SLAT_OPEN_DEG - SLAT_CLOSED_DEG) * t;
     var a = deg * Math.PI/180;
@@ -320,25 +320,25 @@
     for(n=0;n<intakes.length;n++){ for(i=0;i<intakes[n].slats.length;i++) intakes[n].slats[i].rotation.x = a; }
   }
 
-  // 验证探针(无头环境用):确认开启时叶片「下缘向外掀出凸出车体」且「迎风外表面朝上」→ 风上导=下压力
+  // 驗證探針(無頭環境用):確認開啟時葉片「下緣向外掀出凸出車體」且「迎風外表面朝上」→ 風上導=下壓力
   window.__starlingProbe = function(openPct){
     setOpen(openPct/100); scene.updateMatrixWorld(true);
     var ig = intakes[0].g, s = intakes[0].slats[1], c = s.userData.chord;
-    var top  = ig.worldToLocal(s.localToWorld(new T.Vector3(0, c/2,0)));  // 上缘
-    var bot  = ig.worldToLocal(s.localToWorld(new T.Vector3(0,-c/2,0)));  // 下缘
-    var spn  = ig.worldToLocal(s.localToWorld(new T.Vector3(0.1,0,0)));  // 展向参考点
+    var top  = ig.worldToLocal(s.localToWorld(new T.Vector3(0, c/2,0)));  // 上緣
+    var bot  = ig.worldToLocal(s.localToWorld(new T.Vector3(0,-c/2,0)));  // 下緣
+    var spn  = ig.worldToLocal(s.localToWorld(new T.Vector3(0.1,0,0)));  // 展向參考點
     var n = new T.Vector3().crossVectors(spn.clone().sub(top), bot.clone().sub(top)).normalize();
-    if(n.z < 0) n.multiplyScalar(-1);                                    // 统一取朝外(+Z)法线
+    if(n.z < 0) n.multiplyScalar(-1);                                    // 統一取朝外(+Z)法線
     return { openPct:openPct,
              topEdge:{y:+top.y.toFixed(3), z:+top.z.toFixed(3)},
              botEdge:{y:+bot.y.toFixed(3), z:+bot.z.toFixed(3)},
              normalY:+n.y.toFixed(3),
-             protrudesOut:(bot.z > top.z + 1e-4),                        // 下缘凸出车体(+Z)
-             deflectsUp:(n.y > 0.01) };                                  // 迎风外表面朝上 → 风上导
+             protrudesOut:(bot.z > top.z + 1e-4),                        // 下緣凸出車體(+Z)
+             deflectsUp:(n.y > 0.01) };                                  // 迎風外表面朝上 → 風上導
   };
 
-  // ---- 相机(可缩放·真实 m 尺度) + 轨道拖拽 ----
-  var rotY = 0.62, rotX = 0.08;                        // 默认 = 整车三分斜视
+  // ---- 相機(可縮放·真實 m 尺度) + 軌道拖拽 ----
+  var rotY = 0.62, rotX = 0.08;                        // 預設 = 整車三分斜視
   var camDist = 3.4, camY = 1.0, tgtX = 0, tgtY = 0.6, tgtZ = 0;
   var dom = renderer.domElement, down=false, px=0, py=0;
   dom.addEventListener('pointerdown', function(e){ down=true; px=e.clientX; py=e.clientY; if(dom.setPointerCapture) dom.setPointerCapture(e.pointerId); });
@@ -348,15 +348,15 @@
   dom.addEventListener('wheel', function(e){ e.preventDefault(); camDist = Math.max(0.8, Math.min(7, camDist + (e.deltaY>0?0.25:-0.25))); }, {passive:false});
 
   function overview(){ camDist=3.4; camY=1.0; tgtX=0; tgtY=0.6; tgtZ=0; }
-  // 进气口特写:3/4 侧前角度对准右鳃口当前世界位置(吸附后位置随车体而定,故动态读取)
+  // 進氣口特寫:3/4 側前角度對準右鰓口當前世界位置(吸附後位置隨車體而定,故動態讀取)
   function focusIntake(){
-    rotY=-0.5; rotX=0.10; camDist=1.7; camY=0.82;   // 前方 3/4:看进迎风开口
+    rotY=-0.5; rotX=0.10; camDist=1.7; camY=0.82;   // 前方 3/4:看進迎風開口
     pivot.rotation.set(rotX, rotY, 0); pivot.updateMatrixWorld(true);
     var p=new T.Vector3(); if(intakes[1]) intakes[1].g.getWorldPosition(p);
     tgtX=p.x; tgtY=p.y||0.75; tgtZ=p.z;
   }
 
-  // ---- 滑杆 / 自动 / 视角 ----
+  // ---- 滑桿 / 自動 / 視角 ----
   var speed = document.getElementById('speed'), out = document.getElementById('out');
   function txt(v){ return (v<=2 ? '闭合（竖直）' : (v>=98 ? '全开（水平·低阻）' : '开度 '+Math.round(v)+'%')) + ' · ' + Math.round(v) + ' km/h'; }
   var cur = 0;
@@ -369,7 +369,7 @@
   var vbtns = document.querySelectorAll('button[data-y]'), bi;
   for(bi=0;bi<vbtns.length;bi++){ (function(b){ b.addEventListener('click', function(){ rotY=+b.getAttribute('data-y'); rotX=+b.getAttribute('data-x'); overview(); }); })(vbtns[bi]); }
 
-  // ---- glTF 真车模型加载(拖入 .glb/.gltf,或 ?model=URL;真车没到位前显示占位体块)----
+  // ---- glTF 真車模型載入(拖入 .glb/.gltf,或 ?model=URL;真車沒到位前顯示佔位體塊)----
   var statusEl = document.getElementById('mstatus');
   function status(s){ if(statusEl) statusEl.textContent = s; }
   var loader = T.GLTFLoader ? new T.GLTFLoader() : null;
@@ -377,56 +377,56 @@
   function setPlaceholder(v){ for(var i=0;i<bike.children.length;i++){ if(bike.children[i]!==intakeRig) bike.children[i].visible=v; } }
   function fitModel(o){
     var bb=new T.Box3().setFromObject(o), sz=bb.getSize(new T.Vector3());
-    o.scale.multiplyScalar(SPEC.length/Math.max(sz.x,sz.y,sz.z));    // 缩放到真车总长 ~2.085m
+    o.scale.multiplyScalar(SPEC.length/Math.max(sz.x,sz.y,sz.z));    // 縮放到真車總長 ~2.085m
     bb.setFromObject(o); sz=bb.getSize(new T.Vector3()); var c=bb.getCenter(new T.Vector3());
-    o.position.x-=c.x; o.position.z-=c.z; o.position.y+=(sz.y/2-c.y); // 居中并落到地面
+    o.position.x-=c.x; o.position.z-=c.z; o.position.y+=(sz.y/2-c.y); // 居中並落到地面
   }
-  // 鳃口落位:射线吸附到车体外表面(robust·换车型自动贴合,杜绝埋进车壳被遮挡)
-  //   ay/az = 在车体上的瞄准高度/前后(bike-local·侧整流罩颊面);scale=口径;proud=离表面外凸量(防 z-fight)
-  //   spread/ry = 无模型(占位体块)时的兜底相对落位
-  // 开口朝向:owner 定「风口与车同向 = 开口朝车头(迎风)」→ 局部+Z 对齐车前(+Z),各侧再略向外张 cant
-  var GILL_ON_BIKE = { ay:0.78, az:0.52, scale:0.9, proud:0.006, cant:0.0, spread:0.25, ry:0.6 };  // scale 放大到绿框尺寸·cant=0 正面朝车头
+  // 鰓口落位:射線吸附到車體外表面(robust·換車型自動貼合,杜絕埋進車殼被遮擋)
+  //   ay/az = 在車體上的瞄準高度/前後(bike-local·側整流罩頰面);scale=口徑;proud=離表面外凸量(防 z-fight)
+  //   spread/ry = 無模型(佔位體塊)時的備援相對落位
+  // 開口朝向:owner 定「風口與車同向 = 開口朝車頭(迎風)」→ 局部+Z 對齊車前(+Z),各側再略向外張 cant
+  var GILL_ON_BIKE = { ay:0.78, az:0.52, scale:0.9, proud:0.006, cant:0.0, spread:0.25, ry:0.6 };  // scale 放大到綠框尺寸·cant=0 正面朝車頭
   function snapGillsToModel(){
     var g = GILL_ON_BIKE;
     var meshes = []; modelGroup.traverse(function(o){ if(o.isMesh) meshes.push(o); });
-    // 在稳定(未旋转)帧里吸附:临时把 orbit 旋转归零,量到的就是 bike-local 坐标
+    // 在穩定(未旋轉)影格裡吸附:臨時把 orbit 旋轉歸零,量到的就是 bike-local 座標
     var ry0 = pivot.rotation.y, rx0 = pivot.rotation.x;
     pivot.rotation.set(0,0,0); pivot.updateMatrixWorld(true);
     intakeRig.position.set(0,0,0); intakeRig.scale.setScalar(1); intakeRig.rotation.set(0,0,0);
     var rc = new T.Raycaster(); rc.far = 4;
     var zAxis = new T.Vector3(0,0,1), k, sx, iv, hits, h, hit;
     for(k=0;k<2;k++){ sx = (k===0?-1:1); iv = intakes[k].g;
-      rc.set(new T.Vector3(sx*2, g.ay, g.az), new T.Vector3(-sx,0,0));      // 从车外水平射向中线
+      rc.set(new T.Vector3(sx*2, g.ay, g.az), new T.Vector3(-sx,0,0));      // 從車外水平射向中線
       hits = meshes.length ? rc.intersectObjects(meshes, true) : [];
-      hit = null;                                                          // 跳过玻璃/风挡,取第一处实体车壳
+      hit = null;                                                          // 跳過玻璃/風擋,取第一處實體車殼
       for(h=0; h<hits.length; h++){ var nm=(hits[h].object.name||'').toLowerCase();
         if(nm.indexOf('glass')>=0 || nm.indexOf('screen')>=0 || nm.indexOf('windshield')>=0) continue; hit = hits[h]; break; }
       if(!hit && hits.length) hit = hits[0];
       if(hit){
         var p = hit.point.clone();
-        // 面板外法线(压平 Y)——只用于"坐落在侧板表面上"的落位/外凸方向
+        // 面板外法線(壓平 Y)——只用於"坐落在側板表面上"的落位/外凸方向
         var nf = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new T.Vector3(sx,0,0);
         nf.y = 0; if(nf.lengthSq() < 1e-4) nf.set(sx,0,0); nf.normalize();
         if(nf.x*sx < 0) nf.multiplyScalar(-1);
-        // 开口朝向 = 车头正前方迎风(局部+Z=车前);外壳沿前后(局部 -Z=车尾向)加深 → 正面看迎风百叶口、侧面看大壳体(双视图同时满足)
+        // 開口朝向 = 車頭正前方迎風(局部+Z=車前);外殼沿前後(局部 -Z=車尾向)加深 → 正面看迎風百葉口、側面看大殼體(雙視圖同時滿足)
         var face = new T.Vector3(sx*g.cant, 0, 1).normalize();
         iv.scale.setScalar(g.scale);
-        iv.quaternion.setFromUnitVectors(zAxis, face);                     // 开口(局部+Z)朝车头迎风
-        iv.position.copy(p).addScaledVector(nf, g.proud);                  // 坐落侧板表面·略外凸防 z-fight
-      } else {                                                             // 兜底:无模型(占位体块)时旧式相对落位
+        iv.quaternion.setFromUnitVectors(zAxis, face);                     // 開口(局部+Z)朝車頭迎風
+        iv.position.copy(p).addScaledVector(nf, g.proud);                  // 坐落側板表面·略外凸防 z-fight
+      } else {                                                             // 備援:無模型(佔位體塊)時舊式相對落位
         iv.scale.setScalar(g.scale); iv.rotation.set(0, sx*g.ry, 0); iv.position.set(sx*g.spread, g.ay, g.az);
       }
     }
     pivot.rotation.set(rx0, ry0, 0); pivot.updateMatrixWorld(true);
   }
-  // 实时微调用(浏览器里调,免重载):__snap(ay,az,scale,proud)
+  // 即時微呼叫(瀏覽器裡調,免重載):__snap(ay,az,scale,proud)
   window.__snap = function(ay,az,scale,proud,cant){
     if(ay!==undefined)GILL_ON_BIKE.ay=ay; if(az!==undefined)GILL_ON_BIKE.az=az;
     if(scale!==undefined)GILL_ON_BIKE.scale=scale; if(proud!==undefined)GILL_ON_BIKE.proud=proud;
     if(cant!==undefined)GILL_ON_BIKE.cant=cant;
     snapGillsToModel(); return GILL_ON_BIKE;
   };
-  // 临时探针:bike-local(归零旋转)帧里探某 (y,z) 两侧车壳外表面命中+法线(找落位用)
+  // 臨時探針:bike-local(歸零旋轉)影格裡探某 (y,z) 兩側車殼外表面命中+法線(找落位用)
   window.__rayProbe = function(y,z){
     var ry0=pivot.rotation.y, rx0=pivot.rotation.x; pivot.rotation.set(0,0,0); pivot.updateMatrixWorld(true);
     var meshes=[]; modelGroup.traverse(function(o){ if(o.isMesh) meshes.push(o); });
@@ -437,7 +437,7 @@
       } else out.push({sx:sx, miss:true}); });
     pivot.rotation.set(rx0,ry0,0); pivot.updateMatrixWorld(true); return out;
   };
-  // 调试:实时设视角 __view(rotY,rotX,camDist,tgtY,tgtZ,tgtX)
+  // 偵錯:即時設視角 __view(rotY,rotX,camDist,tgtY,tgtZ,tgtX)
   window.__view = function(ry,rx,dist,ty,tz,tx){
     if(ry!==undefined)rotY=ry; if(rx!==undefined)rotX=rx; if(dist!==undefined)camDist=dist;
     if(ty!==undefined)tgtY=ty; if(tz!==undefined)tgtZ=tz; if(tx!==undefined)tgtX=tx;
@@ -450,13 +450,13 @@
     var mu=new URLSearchParams(location.search).get('model') || '/res/sports_bike/scene.gltf'; status('加载中…'); loader.load(mu, function(g){ showModel(g.scene); }, null, function(){ status('加载失败:'+mu); });
   } else { status('GLTFLoader 未就绪(需联网)'); }
 
-  // 进气口落位实时微调:见上 window.__snap(ay,az,scale,proud)（射线吸附后用它在浏览器里调）
+  // 進氣口落位即時微調:見上 window.__snap(ay,az,scale,proud)（射線吸附後用它在瀏覽器裡調）
   window.__modelBox = function(){ var b=new T.Box3().setFromObject(modelGroup); var s=b.getSize(new T.Vector3()); return {min:[+b.min.x.toFixed(2),+b.min.y.toFixed(2),+b.min.z.toFixed(2)], max:[+b.max.x.toFixed(2),+b.max.y.toFixed(2),+b.max.z.toFixed(2)], size:[+s.x.toFixed(2),+s.y.toFixed(2),+s.z.toFixed(2)]}; };
 
-  // 调试:右进气口在当前特写下的屏幕归一化坐标(用于对中)
+  // 偵錯:右進氣口在當前特寫下的螢幕歸一化座標(用於對中)
   window.__starlingNDC = function(){ var p=new T.Vector3(); pivot.rotation.set(rotX,rotY,0); pivot.updateMatrixWorld(true); intakes[1].g.getWorldPosition(p); cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true); cam.matrixWorldInverse.copy(cam.matrixWorld).invert(); p.project(cam); return {x:+p.x.toFixed(2), y:+p.y.toFixed(2)}; };
 
-  // 调试:某片百叶弦线两端在**当前相机/屏幕**上的朝向(捕捉透视下的真实观感)
+  // 偵錯:某片百葉絃線兩端在**當前相機/螢幕**上的朝向(捕捉透視下的真實觀感)
   window.__starlingScreenOrient = function(openPct){
     pivot.rotation.set(rotX,rotY,0); setOpen(openPct/100); scene.updateMatrixWorld(true);
     cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true); cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
@@ -467,12 +467,12 @@
     return { screen_dx:+dx.toFixed(3), screen_dy:+dy.toFixed(3), 屏幕上看着:(dy>dx?'竖直':'水平') };
   };
 
-  // 调试:整车包围盒 + 当前视角下整车在屏幕的投影范围(对框用,稳定后可删)
+  // 偵錯:整車包圍盒 + 當前視角下整車在螢幕的投影範圍(對框用,穩定後可刪)
   window.__starlingInfo = function(){
     var rememberY=pivot.rotation.y, rememberX=pivot.rotation.x;
-    pivot.rotation.set(0,0,0); pivot.updateMatrixWorld(true);                  // 量内禀尺寸:先归零旋转
+    pivot.rotation.set(0,0,0); pivot.updateMatrixWorld(true);                  // 量內稟尺寸:先歸零旋轉
     var bb=new T.Box3().setFromObject(bike), mn=bb.min, mx=bb.max;
-    pivot.rotation.set(rotX,rotY,0); pivot.updateMatrixWorld(true);            // 投影按当前视角
+    pivot.rotation.set(rotX,rotY,0); pivot.updateMatrixWorld(true);            // 投影按當前視角
     cam.position.set(tgtX,camY,camDist); cam.lookAt(tgtX,tgtY,tgtZ); cam.updateMatrixWorld(true); cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
     var pts=[], xs=[], ys=[], i,j,l;
     for(i=0;i<2;i++)for(j=0;j<2;j++)for(l=0;l<2;l++){ var p=new T.Vector3(i?mx.x:mn.x, j?mx.y:mn.y, l?mx.z:mn.z).project(cam); xs.push(p.x); ys.push(p.y); }
@@ -481,15 +481,15 @@
              screenNDC:{ x:[+Math.min.apply(0,xs).toFixed(2),+Math.max.apply(0,xs).toFixed(2)], y:[+Math.min.apply(0,ys).toFixed(2),+Math.max.apply(0,ys).toFixed(2)] } };
   };
 
-  // ============ 风洞气流可视化（示意流线 + 粒子·非 CFD 解算）============
-  // 启发式流场:① 来流 -Z(车头→车尾) ② 车体绕流(Rankine 源-汇:鼻锥出/尾部汇→流线绕过车体)
-  // ③ 迎风口纳气:开度越大,每侧**朝车头的开口**把迎面气流「纳入」(局部汇)越强 → 上游流线弯入口
-  //    = 视觉「张鳃呼吸」(借观感·非真穿流·非性能验证);闭合时无纳气、气流齐平掠过。
+  // ============ 風洞氣流視覺化（示意流線 + 粒子·非 CFD 解算）============
+  // 啟發式流場:① 來流 -Z(車頭→車尾) ② 車體繞流(Rankine 源-匯:鼻錐出/尾部匯→流線繞過車體)
+  // ③ 迎風口納氣:開度越大,每側**朝車頭的開口**把迎面氣流「納入」(局部匯)越強 → 上游流線彎入口
+  //    = 視覺「張鰓呼吸」(借觀感·非真穿流·非效能驗證);閉合時無納氣、氣流齊平掠過。
   var flowGroup = new T.Group(); flowGroup.visible=false; pivot.add(flowGroup);
   var U_WIND=1.0, M_BODY=0.16;
   var SRC=new T.Vector3(0,0.45,0.95), SNK=new T.Vector3(0,0.60,-0.95);
-  var IL=new T.Vector3(-0.22,0.92,0.37), IR=new T.Vector3(0.22,0.92,0.37);   // 纳气目标(占位)·syncIntakeTargets() 按真实鳃口喉道动态求出
-  // 从真实鳃口(已 snap 到车模型)喉道点 → flowGroup 局部坐标·根治"气流不穿风道"(坐标随鳃口走不再写死)
+  var IL=new T.Vector3(-0.22,0.92,0.37), IR=new T.Vector3(0.22,0.92,0.37);   // 納氣目標(佔位)·syncIntakeTargets() 按真實鰓口喉道動態求出
+  // 從真實鰓口(已 snap 到車模型)喉道點 → flowGroup 局部座標·根治"氣流不穿風道"(座標隨鰓口走不再寫死)
   function syncIntakeTargets(){
     if(!intakes[0]||!intakes[1]) return;
     scene.updateMatrixWorld(true);
@@ -502,7 +502,7 @@
     out.set(0,0,-U_WIND);
     _d.copy(p).sub(SRC); var r=_d.length()+0.05; out.addScaledVector(_d,  M_BODY/(r*r*r));
     _d.copy(p).sub(SNK); r=_d.length()+0.05; out.addScaledVector(_d, -M_BODY/(r*r*r));
-    // 迎风口纳气(局部汇):开度越大、离口越近,迎面气流被吸入越强 → 上游流线弯入口(视觉呼吸·非真穿流)
+    // 迎風口納氣(局部匯):開度越大、離口越近,迎面氣流被吸入越強 → 上游流線彎入口(視覺呼吸·非真穿流)
     var draw = Math.max(0, Math.min(1, openFrac));
     if(draw > 0.001){
       _d.copy(IL).sub(p); var g=Math.exp(-_d.lengthSq()/0.11); out.addScaledVector(_d, draw*11.0*g);
@@ -512,9 +512,9 @@
     var l=out.length(); if(l>2.4) out.multiplyScalar(2.4/l);
     return out;
   }
-  // 静态流线(随开度重算·暖色=被百叶明显上导)
+  // 靜態流線(隨開度重算·暖色=被百葉明顯上導)
   var STREAM_SEEDS=[], sy, sxv;
-  for(sxv=-0.33; sxv<=0.331; sxv+=0.12) for(sy=0.18; sy<=1.18; sy+=0.13) STREAM_SEEDS.push(new T.Vector3(sxv,sy,1.35));   // 密度提升(更多流线·覆盖鳃口高度)
+  for(sxv=-0.33; sxv<=0.331; sxv+=0.12) for(sy=0.18; sy<=1.18; sy+=0.13) STREAM_SEEDS.push(new T.Vector3(sxv,sy,1.35));   // 密度提升(更多流線·覆蓋鰓口高度)
   var streamLines=[];
   (function(){ for(var i=0;i<STREAM_SEEDS.length;i++){ var geo=new T.BufferGeometry();
     geo.setAttribute('position', new T.BufferAttribute(new Float32Array(80*3),3));
@@ -525,15 +525,15 @@
     for(i=0;i<streamLines.length;i++){ _p.copy(STREAM_SEEDS[i]); pos=streamLines[i].geometry.attributes.position.array; minD=9;
       for(s=0;s<80;s++){ pos[s*3]=_p.x; pos[s*3+1]=_p.y; pos[s*3+2]=_p.z;
         dmin=Math.min(_p.distanceTo(IL), _p.distanceTo(IR)); if(dmin<minD) minD=dmin;
-        if(dmin<0.05){ for(f=s+1;f<80;f++){ pos[f*3]=_p.x;pos[f*3+1]=_p.y;pos[f*3+2]=_p.z; } break; }   // 被纳入开口→止于口
+        if(dmin<0.05){ for(f=s+1;f<80;f++){ pos[f*3]=_p.x;pos[f*3+1]=_p.y;pos[f*3+2]=_p.z; } break; }   // 被納入開口→止於口
         fieldVel(_p,openFrac,_v); _v.normalize().multiplyScalar(0.045); _p.add(_v);
         if(_p.z<-1.5||_p.y>2.2||_p.y<0.02){ for(f=s+1;f<80;f++){ pos[f*3]=_p.x;pos[f*3+1]=_p.y;pos[f*3+2]=_p.z; } break; } }
       streamLines[i].geometry.attributes.position.needsUpdate=true;
-      streamLines[i].material.color.setHex((openFrac>0.05 && minD<0.18) ? 0xff8a3d : 0x9fd0ff);   // 暖色=被迎风口纳入
+      streamLines[i].material.color.setHex((openFrac>0.05 && minD<0.18) ? 0xff8a3d : 0x9fd0ff);   // 暖色=被迎風口納入
     }
   }
-  // 流动粒子(live 烟流)
-  var NP=2200, pPos=new Float32Array(NP*3), i0;   // 粒子数提升(更密的烟流)
+  // 流動粒子(live 煙流)
+  var NP=2200, pPos=new Float32Array(NP*3), i0;   // 粒子數提升(更密的煙流)
   function seedParticle(i){ pPos[i*3]=-0.45+Math.random()*0.9; pPos[i*3+1]=0.08+Math.random()*1.18; pPos[i*3+2]=1.15+Math.random()*0.35; }
   for(i0=0;i0<NP;i0++) seedParticle(i0);
   var pGeo=new T.BufferGeometry(); pGeo.setAttribute('position', new T.BufferAttribute(pPos,3));
@@ -541,26 +541,26 @@
   flowGroup.add(points);
   function updateParticles(openFrac){ var i, draw=Math.max(0,Math.min(1,openFrac));
     for(i=0;i<NP;i++){ _p.set(pPos[i*3],pPos[i*3+1],pPos[i*3+2]); fieldVel(_p,openFrac,_v); _p.addScaledVector(_v,0.02);
-      var eaten = draw>0.05 && (_p.distanceTo(IL)<0.06 || _p.distanceTo(IR)<0.06);   // 被迎风口吸入→重生(视觉呼吸)
-      if(eaten||_p.z<-1.5||_p.z>1.9||_p.y>2.2||_p.y<0||Math.abs(_p.x)>1.3) seedParticle(i); else { pPos[i*3]=_p.x;pPos[i*3+1]=_p.y;pPos[i*3+2]=_p.z; } }   // 全向边界重生(含 z>1.9 上界·根治被源推向前方飞失致密度枯竭)
+      var eaten = draw>0.05 && (_p.distanceTo(IL)<0.06 || _p.distanceTo(IR)<0.06);   // 被迎風口吸入→重生(視覺呼吸)
+      if(eaten||_p.z<-1.5||_p.z>1.9||_p.y>2.2||_p.y<0||Math.abs(_p.x)>1.3) seedParticle(i); else { pPos[i*3]=_p.x;pPos[i*3+1]=_p.y;pPos[i*3+2]=_p.z; } }   // 全向邊界重生(含 z>1.9 上界·根治被源推向前方飛失緻密度枯竭)
     pGeo.attributes.position.needsUpdate=true;
   }
-  // 风洞测试段框
+  // 風洞測試段框
   var tunnel=new T.Mesh(new T.BoxGeometry(1.0,1.45,3.0), new T.MeshBasicMaterial({color:0x33405e, wireframe:true, transparent:true, opacity:0.12}));
   tunnel.position.set(0,0.72,-0.1); flowGroup.add(tunnel);
-  // 切换
+  // 切換
   var flowOn=false, _lastOpen=-1, flowBtn=document.getElementById('flow');
   function setFlow(v){ flowOn=v; flowGroup.visible=v; if(flowBtn) flowBtn.textContent=v?'🌫 风洞:开':'🌫 风洞气流'; if(v){ syncIntakeTargets(); _lastOpen=-1; } }
   if(flowBtn) flowBtn.addEventListener('click', function(){ setFlow(!flowOn); });
 
-  // 验证:右迎风口上游种一条流线,返回其与开口的最近距离(开比闭应更小 = 被纳入开口)
+  // 驗證:右迎風口上游種一條流線,回傳其與開口的最近距離(開比閉應更小 = 被納入開口)
   window.__starlingFlowCheck = function(openFrac){ _p.set(0.29,0.72,1.3); var minD=9,s,d;
     for(s=0;s<240;s++){ d=_p.distanceTo(IR); if(d<minD)minD=d; if(d<0.05)break; fieldVel(_p,openFrac,_v); _v.normalize().multiplyScalar(0.025); _p.add(_v); if(_p.z<-1.4)break; }
     return { openFrac:openFrac, minDistToIntake:+minD.toFixed(3), endZ:+_p.z.toFixed(2) }; };
 
   window.addEventListener('resize', function(){ W=stage.clientWidth||920; renderer.setSize(W,H); cam.aspect=W/H; cam.updateProjectionMatrix(); });
 
-  // ============ 部件标注(HTML 标签投影到 3D 部件·指右鳃口) ============
+  // ============ 部件標註(HTML 標籤投影到 3D 部件·指右鰓口) ============
   var ANNOT = [
     {key:'winglet', text:'winglet 小翼', color:'#7fd0ff'},
     {key:'strake',  text:'strake 导流片·锯齿后缘', color:'#ffce6b'},
@@ -576,7 +576,7 @@
   var annotOn=false, annotBtn=document.getElementById('annot-btn');
   function setAnnot(v){ annotOn=v; annotBox.style.display=v?'block':'none'; if(annotBtn) annotBtn.textContent=v?'🏷 标注:开(指向部件)':'🏷 部件标注'; if(v) focusIntake(); else hoverIdx=-1; }
   if(annotBtn) annotBtn.addEventListener('click', function(){ setAnnot(!annotOn); });
-  // 鼠标移到部件上 → 高亮该件(标签显示在外侧)
+  // 滑鼠移到部件上 → 高亮該件(標籤顯示在外側)
   var _wp = new T.Vector3(), mscr = [], gc = {x:0,y:0}, hoverIdx = -1;
   dom.addEventListener('pointermove', function(e){
     if(!annotOn || down){ return; }
@@ -599,7 +599,7 @@
     leader.style.display='none'; aspot.style.display='none';
     if(hoverIdx>=0 && mscr[hoverIdx] && mscr[hoverIdx].vis){
       var m = mscr[hoverIdx], el = annotEls[hoverIdx];
-      var ox=m.x-gc.x, oy=m.y-gc.y, ol=Math.hypot(ox,oy)||1; ox/=ol; oy/=ol;     // 外侧方向=鳃口心→部件
+      var ox=m.x-gc.x, oy=m.y-gc.y, ol=Math.hypot(ox,oy)||1; ox/=ol; oy/=ol;     // 外側方向=鰓口心→部件
       var lx = Math.max(64, Math.min(Wp-64, m.x+ox*70)), ly = Math.max(16, Math.min(Hp-16, m.y+oy*70));
       el.style.display='block'; el.style.left=lx.toFixed(1)+'px'; el.style.top=ly.toFixed(1)+'px';
       aspot.style.display='block'; aspot.style.left=m.x.toFixed(1)+'px'; aspot.style.top=m.y.toFixed(1)+'px'; aspot.style.background=ANNOT[hoverIdx].color;
