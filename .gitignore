@@ -35,3 +35,11 @@ node_modules/
 *.orig
 
 # 注意:AGENTS.md / agents.md 為專案準則,必須跟蹤,勿在此排除。
+
+# 本機作業與恢復材料；cad/dist/ 仍是需要散布的列印交付包。
+/.local/
+/.scratch/
+/handoff/
+/vardata/
+/credentials/
+/*.bundle

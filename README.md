@@ -5,26 +5,33 @@
 ![Platform: GSX250R](https://img.shields.io/badge/platform-GSX250R-blue.svg?style=flat-square)
 ![Prototype: v1 specified](https://img.shields.io/badge/prototype-v1%20specified-orange.svg?style=flat-square)
 
-Starling v2 是面向 Suzuki GSX250R 車身側板的電子百葉進氣口（“鰓口”）原型：固定框承風、多片葉片由一個舵機聯動，開口朝車頭迎風，並隨車速張合。
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文(TW)](README.zh-TW.md) | [日本語](README.ja.md)
 
-## 當前狀態
+Starling v2 is an experimental electronic louvered intake for the side panels of the Suzuki GSX250R. A fixed frame faces the oncoming airflow; one servo links several blades whose opening follows vehicle speed.
 
-原型一號已經形成可審查的設計包，但尚未完成上板或實車驗證：
+## Status
 
-- [立項文件](docs/charter.md)記錄 v2 的範圍、失效保護和安全邊界。
-- [原型一號規格](docs/prototype-v1.md)包含 BOM、串接、臺架驗證順序和控制邏輯。
-- [參數化 CAD](cad/starling_v1.scad)及其 [列印/裝配說明](cad/README.md)是機構的唯一 CAD 來源；`cad/dist/` 為列印交付包。
-- [韌體骨架](firmware/starling/starling.ino)面向 ESP32 DevKit（WROOM-32），定義了皮託壓差測速、舵機控制、被動記錄和 USB/藍牙設定邊界；原始碼明確標註為尚未上板編譯驗證的骨架。
+Prototype 1 has a reviewable design package. Firmware has not been compiled and verified on a board, and the hardware has not been validated on a motorcycle.
 
-## 3D 機構演示
+- The [charter](docs/charter.md) defines scope, failure protection and safety boundaries.
+- The [prototype specification](docs/prototype-v1.md) contains the BOM, wiring, bench-test sequence and control logic.
+- The [parametric CAD source](cad/starling_v1.scad) and [printing/assembly guide](cad/README.md) own the mechanism; `cad/dist/` contains the printing deliverables.
+- The [ESP32 DevKit (WROOM-32) firmware skeleton](firmware/starling/starling.ino) defines pitot differential-pressure speed sensing, servo control, passive recording and USB/Bluetooth configuration. It remains an unverified skeleton.
 
-[gsx250r-vreal.html](proto/gsx250r-vreal.html) 是唯一現行 3D 演示。可通過本機靜態 HTTP 伺服器從儲存庫根目錄打開。頁面用滑桿模擬車速和百葉開度，並可拖入其他 `.glb`/`.gltf` 模型。頁面中的氣流效果是機制演示，**不是 CFD 或效能驗證**。
+## 3D mechanism demo
 
-## 專案約束
+[gsx250r-vreal.html](proto/gsx250r-vreal.html) is the current 3D demo. From the repository root, run:
 
-- 設計鐵律和當前狀態見 [AGENTS.md](AGENTS.md)。
-- 斷電時機構應由彈簧回到閉合位置；上路前須完成臺架、封閉場地和當地法規自查。
+```shell
+python -m http.server 8000 --bind 127.0.0.1
+```
+
+Open `http://127.0.0.1:8000/proto/gsx250r-vreal.html`. Sliders simulate speed and blade opening; another `.glb`/`.gltf` model can be dropped in. The airflow effect illustrates the mechanism; it is not CFD or performance evidence.
+
+## Design boundaries
+
+Dynamic appearance is the main goal; any airflow or cooling benefit is secondary and unverified. The design requires a spring to close the blades on power loss, with mechanical and software limits. Complete bench tests, closed-course tests and the applicable local legal checks before road use. External USB/Bluetooth connections configure or read data rather than control the opening in real time. The charter and specification own these requirements.
 
 ## License
 
-本專案自有的程式碼、文件與素材採用 [GNU General Public License v3.0](LICENSE) 發佈。
+Original code, documents and assets use [GNU General Public License v3.0](LICENSE). The motorcycle model retains its [CC-BY-4.0 attribution and license](res/sports_bike/license.txt).
